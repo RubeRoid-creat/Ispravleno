@@ -56,7 +56,8 @@ export default function Login() {
         errorMessage = err.response.data?.error || `Ошибка сервера: ${err.response.status}`;
       } else if (err.request) {
         // Запрос отправлен, но ответа нет
-        errorMessage = 'Не удалось подключиться к серверу. Убедитесь, что backend запущен на http://localhost:3000';
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://212.74.227.208:3000/api';
+        errorMessage = `Не удалось подключиться к серверу. Убедитесь, что backend запущен на ${apiUrl.replace('/api', '')}`;
       } else {
         // Ошибка при настройке запроса
         errorMessage = err.message || 'Неизвестная ошибка';
