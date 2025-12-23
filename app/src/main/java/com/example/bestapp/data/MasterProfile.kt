@@ -7,19 +7,6 @@ data class Skill(
     val experience: Int // Опыт в годах
 )
 
-// Зона работы (район, город)
-data class WorkZone(
-    val id: String,
-    val name: String,
-    val type: ZoneType
-)
-
-enum class ZoneType(val displayName: String) {
-    DISTRICT("Район"),
-    CITY("Город"),
-    METRO("Метро")
-}
-
 // График работы
 data class WorkSchedule(
     val monday: DaySchedule = DaySchedule(),
@@ -50,7 +37,6 @@ data class ServiceRate(
 data class MasterProfile(
     val userId: Long,
     val skills: List<Skill> = emptyList(),
-    val workZones: List<WorkZone> = emptyList(),
     val schedule: WorkSchedule = WorkSchedule(),
     val rates: List<ServiceRate> = emptyList(),
     val description: String? = null,

@@ -86,12 +86,6 @@
         <action
             android:id="@+id/action_home_to_create_order"
             app:destination="@id/createOrderFragment" />
-        <action
-            android:id="@+id/action_home_to_auto_accept_settings"
-            app:destination="@id/autoAcceptSettingsFragment" />
-        <action
-            android:id="@+id/action_home_to_work_zones"
-            app:destination="@id/workZonesFragment" />
     </fragment>
     
     <fragment
@@ -281,10 +275,6 @@
         tools:layout="@layout/fragment_settings">
         
         <action
-            android:id="@+id/action_settings_to_autoAcceptSettingsFragment"
-            app:destination="@id/autoAcceptSettingsFragment" />
-        
-        <action
             android:id="@+id/action_settings_to_mlm"
             app:destination="@id/mlmFragment" />
         
@@ -294,19 +284,6 @@
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
     </fragment>
-
-    <fragment
-        android:id="@+id/autoAcceptSettingsFragment"
-        android:name="com.example.bestapp.ui.settings.AutoAcceptSettingsFragment"
-        android:label="Настройки автоприема"
-        tools:layout="@layout/fragment_auto_accept_settings" />
-
-    <fragment
-        android:id="@+id/workZonesFragment"
-        android:name="com.example.bestapp.ui.zones.WorkZonesFragment"
-        android:label="Зоны работы"
-        tools:layout="@layout/fragment_work_zones" />
-
 </navigation>
 
 

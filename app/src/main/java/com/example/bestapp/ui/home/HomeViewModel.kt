@@ -183,9 +183,4 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-    
-    fun updateAutoAcceptSettings(settings: com.example.bestapp.data.AutoAcceptSettings) {
-        // Сохранение уже выполнено в Fragment, здесь можно добавить дополнительную логику
-        // Например, уведомление других компонентов об изменении настроек
-    }
 }

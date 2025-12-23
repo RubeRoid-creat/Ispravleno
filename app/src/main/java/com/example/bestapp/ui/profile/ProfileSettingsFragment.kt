@@ -21,7 +21,6 @@ import java.util.UUID
 class ProfileSettingsFragment : Fragment() {
 
     private val skills = mutableListOf<Skill>()
-    private val zones = mutableListOf<WorkZone>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_profile_settings, container, false)
@@ -36,22 +35,15 @@ class ProfileSettingsFragment : Fragment() {
         }
         
         val recyclerSkills = view.findViewById<RecyclerView>(R.id.recycler_skills)
-        val recyclerZones = view.findViewById<RecyclerView>(R.id.recycler_zones)
         
         recyclerSkills?.layoutManager = LinearLayoutManager(context)
-        recyclerZones?.layoutManager = LinearLayoutManager(context)
         
         val btnAddSkill = view.findViewById<MaterialButton>(R.id.btn_add_skill)
-        val btnAddZone = view.findViewById<MaterialButton>(R.id.btn_add_zone)
         val btnEditSchedule = view.findViewById<MaterialButton>(R.id.btn_edit_schedule)
         val btnSave = view.findViewById<MaterialButton>(R.id.btn_save)
         
         btnAddSkill?.setOnClickListener {
             showAddSkillDialog()
-        }
-        
-        btnAddZone?.setOnClickListener {
-            showAddZoneDialog()
         }
         
         btnEditSchedule?.setOnClickListener {
@@ -84,32 +76,10 @@ class ProfileSettingsFragment : Fragment() {
             .show()
     }
     
-    private fun showAddZoneDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_zone, null)
-        val nameInput = dialogView.findViewById<TextInputEditText>(R.id.input_zone_name)
-        
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Добавить зону работы")
-            .setView(dialogView)
-            .setPositiveButton("Добавить") { _, _ ->
-                val name = nameInput.text.toString()
-                
-                if (name.isNotBlank()) {
-                    zones.add(WorkZone(UUID.randomUUID().toString(), name, ZoneType.DISTRICT))
-                    updateRecyclerViews()
-                }
-            }
-            .setNegativeButton("Отмена", null)
-            .show()
-    }
-    
-    
     private fun updateRecyclerViews() {
         val recyclerSkills = view?.findViewById<RecyclerView>(R.id.recycler_skills)
-        val recyclerZones = view?.findViewById<RecyclerView>(R.id.recycler_zones)
         
         recyclerSkills?.visibility = if (skills.isNotEmpty()) View.VISIBLE else View.GONE
-        recyclerZones?.visibility = if (zones.isNotEmpty()) View.VISIBLE else View.GONE
     }
     
     private fun saveProfile() {

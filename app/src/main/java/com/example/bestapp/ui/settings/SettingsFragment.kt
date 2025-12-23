@@ -29,7 +29,6 @@ class SettingsFragment : Fragment() {
     private var inputEmail: TextInputEditText? = null
     private var switchPushNotifications: SwitchMaterial? = null
     private var switchEmailNotifications: SwitchMaterial? = null
-    private var btnAutoAcceptSettings: MaterialButton? = null
     private var btnMLM: MaterialButton? = null
     private var btnProfileSettings: MaterialButton? = null
     private var btnLogout: MaterialButton? = null
@@ -57,7 +56,6 @@ class SettingsFragment : Fragment() {
         inputEmail = view.findViewById(R.id.input_email)
         switchPushNotifications = view.findViewById(R.id.switch_push_notifications)
         switchEmailNotifications = view.findViewById(R.id.switch_email_notifications)
-        btnAutoAcceptSettings = view.findViewById(R.id.btn_auto_accept_settings)
         btnMLM = view.findViewById(R.id.btn_mlm)
         btnLogout = view.findViewById(R.id.btn_logout)
         btnPrivacyPolicy = view.findViewById(R.id.btn_privacy_policy)
@@ -126,11 +124,6 @@ class SettingsFragment : Fragment() {
             if (!hasFocus) {
                 savePersonalData()
             }
-        }
-        
-        // Навигация к настройкам автоприема
-        btnAutoAcceptSettings?.setOnClickListener {
-            findNavController().navigate(R.id.action_settings_to_autoAcceptSettingsFragment)
         }
         
         // Навигация к MLM

@@ -58,10 +58,6 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
     private val _verificationMessage = MutableStateFlow<String?>(null)
     val verificationMessage: StateFlow<String?> = _verificationMessage.asStateFlow()
     
-    // Настройки автоприема
-    private val _autoAcceptSettings = MutableStateFlow(prefsManager.getAutoAcceptSettings())
-    val autoAcceptSettings: StateFlow<com.example.bestapp.data.AutoAcceptSettings> = _autoAcceptSettings.asStateFlow()
-    
     // Фильтры
     private val _selectedDeviceTypes = MutableStateFlow<Set<String>>(emptySet())
     private val _minPrice = MutableStateFlow<Double?>(null)
@@ -487,11 +483,6 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
                 
                 // Верификация больше не блокирует просмотр заявок (исправлено на сервере)
                 // Мастера могут видеть заявки даже без верификации, но не могут их принимать
-                
-                // Проверяем автоприем для новых заказов
-                if (_isShiftActive.value && _autoAcceptSettings.value.isEnabled && _isVerified.value == true) {
-                    checkAutoAccept(apiOrders)
-                }
                 
                 if (apiOrders.isNotEmpty()) {
                     val firstOrder = apiOrders.first()
@@ -965,101 +956,6 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
                 _rejectedOrders.value = emptyList()
             }
         }
-    }
-    
-    /**
-     * Проверяет заказы на соответствие настройкам автоприема и автоматически принимает подходящие
-     */
-    private suspend fun checkAutoAccept(apiOrders: List<com.example.bestapp.api.models.ApiOrder>) {
-        val settings = _autoAcceptSettings.value
-        if (!settings.isEnabled || !_isShiftActive.value) return
-        
-        val masterLocation = getMasterLocation()
-        
-        for (apiOrder in apiOrders) {
-            // Пропускаем заказы, которые уже приняты или не новые
-            if (apiOrder.repairStatus != "new") continue
-            
-            // Конвертируем в Order для проверки
-            val order = com.example.bestapp.data.Order(
-                id = apiOrder.id,
-                clientId = apiOrder.clientId,
-                clientName = apiOrder.clientName,
-                clientPhone = apiOrder.clientPhone,
-                clientAddress = apiOrder.address,
-                latitude = apiOrder.latitude,
-                longitude = apiOrder.longitude,
-                deviceType = apiOrder.deviceType,
-                deviceBrand = apiOrder.deviceBrand ?: "",
-                deviceModel = apiOrder.deviceModel ?: "",
-                problemDescription = apiOrder.problemDescription,
-                orderType = when (apiOrder.orderType) {
-                    "urgent" -> com.example.bestapp.data.OrderType.URGENT
-                    else -> com.example.bestapp.data.OrderType.REGULAR
-                },
-                estimatedCost = apiOrder.estimatedCost,
-                urgency = apiOrder.urgency,
-                distance = apiOrder.distance
-            )
-            
-            // Вычисляем расстояние, если не указано
-            val distance = if (order.distance != null) {
-                order.distance
-            } else if (masterLocation != null && order.latitude != null && order.longitude != null) {
-                calculateDistance(
-                    masterLocation.first, masterLocation.second,
-                    order.latitude, order.longitude
-                )
-            } else {
-                null
-            }
-            
-            // Проверяем соответствие настройкам
-            if (settings.matchesOrder(order, distance)) {
-                Log.d(TAG, "Автоприем заказа #${order.id}")
-                
-                // Получаем активное назначение для заказа
-                val assignmentResult = apiRepository.getActiveAssignmentForOrder(order.id)
-                assignmentResult.onSuccess { assignment ->
-                    assignment?.let {
-                        // Автоматически принимаем назначение
-                        val acceptResult = apiRepository.acceptAssignment(it.id)
-                        acceptResult.onSuccess {
-                            Log.d(TAG, "Заказ #${order.id} автоматически принят")
-                            // Можно добавить уведомление
-                        }.onFailure { error ->
-                            Log.e(TAG, "Ошибка автоприема заказа #${order.id}: ${error.message}")
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    /**
-     * Вычисляет расстояние между двумя точками в метрах
-     */
-    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val earthRadius = 6371000.0 // Радиус Земли в метрах
-        
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        
-        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        
-        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        
-        return earthRadius * c
-    }
-    
-    /**
-     * Обновляет настройки автоприема
-     */
-    fun updateAutoAcceptSettings(settings: com.example.bestapp.data.AutoAcceptSettings) {
-        prefsManager.setAutoAcceptSettings(settings)
-        _autoAcceptSettings.value = settings
     }
 }
 

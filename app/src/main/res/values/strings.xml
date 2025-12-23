@@ -53,12 +53,10 @@
     <!-- Profile Settings screen -->
     <string name="profile_settings_title">Настройка профиля</string>
     <string name="profile_settings_skills">Навыки и специализации</string>
-    <string name="profile_settings_zones">Зоны работы</string>
     <string name="profile_settings_schedule">График работы</string>
     <string name="profile_settings_rates">Тарифы на услуги</string>
     <string name="profile_settings_additional">Дополнительно</string>
     <string name="profile_settings_add_skill">Добавить навык</string>
-    <string name="profile_settings_add_zone">Добавить зону</string>
     <string name="profile_settings_add_rate">Добавить услугу</string>
     <string name="profile_settings_description">Описание</string>
     <string name="profile_settings_min_order">Минимальная стоимость заказа</string>
@@ -67,7 +65,6 @@
     <string name="profile_settings_save">Сохранить изменения</string>
     <string name="profile_settings_skill_name">Название навыка</string>
     <string name="profile_settings_skill_experience">Опыт (лет)</string>
-    <string name="profile_settings_zone_name">Название района/города</string>
     <string name="profile_settings_service_name">Название услуги</string>
     <string name="profile_settings_service_price">Цена</string>
     <string name="profile_settings_service_duration">Длительность (мин)</string>
