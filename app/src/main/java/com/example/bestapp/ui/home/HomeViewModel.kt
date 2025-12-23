@@ -74,7 +74,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             Log.d(TAG, "🔄 Загрузка новостей из API...")
             val result = apiRepository.getNews()
             result.onSuccess { apiNewsList ->
+                Log.d(TAG, "📥 Получено ${apiNewsList.size} новостей из API")
+                if (apiNewsList.isEmpty()) {
+                    Log.w(TAG, "⚠️ API вернул пустой список новостей")
+                } else {
+                    apiNewsList.forEachIndexed { index, apiNews ->
+                        Log.d(TAG, "  Новость #${index + 1}: id=${apiNews.id}, title=\"${apiNews.title}\", publishedAt=\"${apiNews.publishedAt}\"")
+                    }
+                }
+                
                 val newsList = apiNewsList.map { apiNews ->
+                    val parsedDate = try {
+                        // Парсим ISO дату с сервера
+                        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                            timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        }.parse(apiNews.publishedAt) ?: java.util.Date()
+                    } catch (e: Exception) {
+                        try {
+                            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).parse(apiNews.publishedAt) ?: java.util.Date()
+                        } catch (e2: Exception) {
+                            Log.w(TAG, "⚠️ Не удалось распарсить дату: ${apiNews.publishedAt}, используем текущую дату")
+                            java.util.Date()
+                        }
+                    }
+                    
                     com.example.bestapp.data.News(
                         id = apiNews.id,
                         title = apiNews.title,
@@ -88,31 +111,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                             "trends" -> com.example.bestapp.data.NewsCategory.TRENDS
                             else -> com.example.bestapp.data.NewsCategory.TIPS
                         },
-                        publishedAt = try {
-                            // Парсим ISO дату с сервера
-                            java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
-                                timeZone = java.util.TimeZone.getTimeZone("UTC")
-                            }.parse(apiNews.publishedAt) ?: java.util.Date()
-                        } catch (e: Exception) {
-                            try {
-                                java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).parse(apiNews.publishedAt) ?: java.util.Date()
-                            } catch (e2: Exception) {
-                                java.util.Date()
-                            }
-                        }
+                        publishedAt = parsedDate
                     )
                 }
                 _news.value = newsList
-                Log.d(TAG, "✅ Loaded ${newsList.size} news from API")
+                Log.d(TAG, "✅ Успешно загружено и обработано ${newsList.size} новостей")
             }.onFailure { error ->
-                Log.e(TAG, "❌ Failed to load news from API: ${error.message}")
+                Log.e(TAG, "❌ Ошибка загрузки новостей из API: ${error.message}")
+                error.printStackTrace()
                 // Если API не сработало, пытаемся загрузить из репозитория (моки)
                 repository.news.collect { newsList ->
                     _news.value = newsList
+                    Log.d(TAG, "📦 Загружено ${newsList.size} новостей из локального репозитория (fallback)")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error loading news from API", e)
+            Log.e(TAG, "❌ Исключение при загрузке новостей из API", e)
+            e.printStackTrace()
         }
     }
     

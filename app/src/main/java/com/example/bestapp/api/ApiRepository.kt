@@ -1529,14 +1529,27 @@ class ApiRepository {
     suspend fun getNews(): Result<List<ApiNews>> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "🔄 Запрос новостей из API: ${RetrofitClient.BASE_URL}api/news")
                 val response = api.getNews()
+                Log.d(TAG, "📥 Ответ API: code=${response.code()}, isSuccessful=${response.isSuccessful}")
+                
                 if (response.isSuccessful) {
-                    Result.success(response.body() ?: emptyList())
+                    val newsList = response.body() ?: emptyList()
+                    Log.d(TAG, "✅ Получено ${newsList.size} новостей из API")
+                    if (newsList.isNotEmpty()) {
+                        newsList.forEachIndexed { index, news ->
+                            Log.d(TAG, "  Новость #${index + 1}: id=${news.id}, title=\"${news.title}\", publishedAt=\"${news.publishedAt}\"")
+                        }
+                    }
+                    Result.success(newsList)
                 } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e(TAG, "❌ Ошибка получения новостей: code=${response.code()}, body=$errorBody")
                     Result.failure(Exception("Ошибка загрузки новостей: ${response.code()}"))
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting news", e)
+                Log.e(TAG, "❌ Исключение при получении новостей: ${e.javaClass.simpleName} - ${e.message}", e)
+                e.printStackTrace()
                 Result.failure(e)
             }
         }
