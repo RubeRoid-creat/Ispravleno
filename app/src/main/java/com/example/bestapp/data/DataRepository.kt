@@ -9,7 +9,6 @@ import java.util.Date
 object DataRepository {
     private var nextOrderId = 1L
     private var nextClientId = 1L
-    private var nextNewsId = 1L
     private var nextMasterId = 1L
     private var nextAssignmentId = 1L
     
@@ -29,8 +28,7 @@ object DataRepository {
     val orderAssignments: StateFlow<List<OrderAssignment>> = _orderAssignments.asStateFlow()
     
     init {
-        // Добавляем только новости, без тестовых заказов
-        initNewsData()
+        // Добавляем только мастеров, без тестовых заказов и новостей
         initMastersData()
     }
     
@@ -268,60 +266,6 @@ object DataRepository {
         val dateYear = calendar.get(java.util.Calendar.YEAR)
         
         return currentMonth == dateMonth && currentYear == dateYear
-    }
-    
-    private fun initNewsData() {
-        val testNews = listOf(
-            News(
-                id = nextNewsId++,
-                title = "5 признаков того, что смартфон нуждается в ремонте",
-                summary = "Узнайте основные сигналы, указывающие на необходимость профессионального ремонта вашего устройства",
-                content = "Быстрая разрядка батареи, перегрев устройства, медленная работа, проблемы с сенсором и странные звуки - все это может указывать на серьезные проблемы.",
-                category = NewsCategory.TIPS,
-                publishedAt = Date(System.currentTimeMillis() - 86400000) // 1 день назад
-            ),
-            News(
-                id = nextNewsId++,
-                title = "Новые стандарты USB-C в 2025 году",
-                summary = "Европейский союз вводит обязательное использование USB-C для всех мобильных устройств",
-                content = "С 2025 года все новые смартфоны, планшеты и ноутбуки должны поддерживать стандарт зарядки USB-C.",
-                category = NewsCategory.INDUSTRY,
-                publishedAt = Date(System.currentTimeMillis() - 172800000) // 2 дня назад
-            ),
-            News(
-                id = nextNewsId++,
-                title = "Как правильно чистить ноутбук от пыли",
-                summary = "Пошаговое руководство по безопасной очистке вашего ноутбука",
-                content = "Регулярная чистка ноутбука от пыли продлевает срок его службы и предотвращает перегрев. Узнайте, как это сделать правильно.",
-                category = NewsCategory.GUIDES,
-                publishedAt = Date(System.currentTimeMillis() - 259200000) // 3 дня назад
-            ),
-            News(
-                id = nextNewsId++,
-                title = "Топ-5 инструментов для ремонта техники",
-                summary = "Необходимый набор для профессионального ремонта электроники",
-                content = "Качественная отвертка, пинцет, мультиметр, термофен и увеличительное стекло - базовый набор каждого мастера.",
-                category = NewsCategory.TOOLS,
-                publishedAt = Date(System.currentTimeMillis() - 345600000) // 4 дня назад
-            ),
-            News(
-                id = nextNewsId++,
-                title = "Рост спроса на ремонт складных смартфонов",
-                summary = "Складные устройства требуют специализированного подхода к ремонту",
-                content = "С ростом популярности складных смартфонов увеличивается потребность в специалистах по их ремонту.",
-                category = NewsCategory.TRENDS,
-                publishedAt = Date(System.currentTimeMillis() - 432000000) // 5 дней назад
-            ),
-            News(
-                id = nextNewsId++,
-                title = "Защита от влаги: миф или реальность?",
-                summary = "Разбираемся в стандартах водозащиты современных устройств",
-                content = "IP67, IP68 - что означают эти обозначения и стоит ли доверять рекламе производителей.",
-                category = NewsCategory.TIPS,
-                publishedAt = Date(System.currentTimeMillis() - 518400000) // 6 дней назад
-            )
-        )
-        _news.value = testNews
     }
     
     private fun initMastersData() {

@@ -307,6 +307,11 @@ interface ApiService {
     
     @GET("api/mlm/team-performance")
     suspend fun getMLMTeamPerformance(@Query("period") period: Int? = null): Response<com.example.bestapp.api.models.ApiMLMTeamPerformanceResponse>
+
+    // ============= Новости =============
+    
+    @GET("api/news")
+    suspend fun getNews(): Response<List<com.example.bestapp.api.models.ApiNews>>
 }
 
 

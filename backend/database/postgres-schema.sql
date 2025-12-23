@@ -393,4 +393,24 @@ CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
 CREATE TRIGGER update_fcm_tokens_updated_at BEFORE UPDATE ON fcm_tokens
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Таблица новостей
+CREATE TABLE IF NOT EXISTS news (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    summary TEXT,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    category VARCHAR(50) DEFAULT 'general',
+    is_active BOOLEAN DEFAULT TRUE,
+    published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_published_at ON news(published_at);
+CREATE INDEX IF NOT EXISTS idx_news_active ON news(is_active);
+
+CREATE TRIGGER update_news_updated_at BEFORE UPDATE ON news
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 

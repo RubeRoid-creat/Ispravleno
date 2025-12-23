@@ -668,4 +668,21 @@ CREATE INDEX IF NOT EXISTS idx_verification_codes_type ON verification_codes(typ
 CREATE INDEX IF NOT EXISTS idx_verification_codes_code ON verification_codes(code);
 CREATE INDEX IF NOT EXISTS idx_verification_codes_expires_at ON verification_codes(expires_at);
 
+-- Таблица новостей
+CREATE TABLE IF NOT EXISTS news (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    summary TEXT,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    category TEXT DEFAULT 'general',
+    is_active INTEGER DEFAULT 1, -- 0 = false, 1 = true
+    published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_published_at ON news(published_at);
+CREATE INDEX IF NOT EXISTS idx_news_active ON news(is_active);
+
 

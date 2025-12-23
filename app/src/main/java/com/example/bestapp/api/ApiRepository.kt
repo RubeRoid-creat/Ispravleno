@@ -1523,6 +1523,24 @@ class ApiRepository {
             }
         }
     }
+
+    // ============= Новости =============
+    
+    suspend fun getNews(): Result<List<ApiNews>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.getNews()
+                if (response.isSuccessful) {
+                    Result.success(response.body() ?: emptyList())
+                } else {
+                    Result.failure(Exception("Ошибка загрузки новостей: ${response.code()}"))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting news", e)
+                Result.failure(e)
+            }
+        }
+    }
 }
 
 

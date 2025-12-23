@@ -58,10 +58,54 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             // Загружаем статистику мастера через API
             loadMasterStats()
             
-            // Загружаем новости
-            repository.news.collect { newsList ->
+            // Загружаем новости через API
+            loadNewsFromApi()
+        }
+    }
+    
+    private suspend fun loadNewsFromApi() {
+        try {
+            val result = apiRepository.getNews()
+            result.onSuccess { apiNewsList ->
+                val newsList = apiNewsList.map { apiNews ->
+                    com.example.bestapp.data.News(
+                        id = apiNews.id,
+                        title = apiNews.title,
+                        summary = apiNews.summary ?: "",
+                        content = apiNews.content,
+                        category = when (apiNews.category?.lowercase()) {
+                            "tips" -> com.example.bestapp.data.NewsCategory.TIPS
+                            "industry" -> com.example.bestapp.data.NewsCategory.INDUSTRY
+                            "guides" -> com.example.bestapp.data.NewsCategory.GUIDES
+                            "tools" -> com.example.bestapp.data.NewsCategory.TOOLS
+                            "trends" -> com.example.bestapp.data.NewsCategory.TRENDS
+                            else -> com.example.bestapp.data.NewsCategory.TIPS
+                        },
+                        publishedAt = try {
+                            // Парсим ISO дату с сервера
+                            java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+                                timeZone = java.util.TimeZone.getTimeZone("UTC")
+                            }.parse(apiNews.publishedAt) ?: java.util.Date()
+                        } catch (e: Exception) {
+                            try {
+                                java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).parse(apiNews.publishedAt) ?: java.util.Date()
+                            } catch (e2: Exception) {
+                                java.util.Date()
+                            }
+                        }
+                    )
+                }
                 _news.value = newsList
+                Log.d(TAG, "✅ Loaded ${newsList.size} news from API")
+            }.onFailure { error ->
+                Log.e(TAG, "❌ Failed to load news from API: ${error.message}")
+                // Если API не сработало, пытаемся загрузить из репозитория (моки)
+                repository.news.collect { newsList ->
+                    _news.value = newsList
+                }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading news from API", e)
         }
     }
     

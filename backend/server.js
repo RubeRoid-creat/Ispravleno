@@ -28,6 +28,7 @@ import loyaltyRoutes from './routes/loyalty.js';
 import routeOptimizationRoutes from './routes/route-optimization.js';
 import mlmRoutes from './routes/mlm.js';
 import verificationCodesRoutes from './routes/verification-codes.js';
+import newsRoutes from './routes/news.js';
 // Импортируем push-notification-service для инициализации Firebase Admin SDK
 import './services/push-notification-service.js';
 // Инициализируем Redis для кэширования
@@ -407,6 +408,7 @@ app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/route-optimization', routeOptimizationRoutes);
 app.use('/api/mlm', mlmRoutes);
 app.use('/api/version', versionRoutes);
+app.use('/api/news', newsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
