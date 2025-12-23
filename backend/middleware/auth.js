@@ -63,5 +63,11 @@ export const generateToken = (userId, role) => {
   );
 };
 
+// Алиасы для совместимости
+export const authenticateToken = authenticate;
+
+// Middleware для проверки прав администратора
+export const isAdmin = authorize('admin');
+
 
 
