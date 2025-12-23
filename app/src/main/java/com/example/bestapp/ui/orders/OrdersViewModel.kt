@@ -11,6 +11,8 @@ import com.example.bestapp.data.DataRepository
 import com.example.bestapp.data.Order
 import com.example.bestapp.data.PreferencesManager
 import com.example.bestapp.data.RepairStatus
+import com.example.bestapp.network.WebSocketManager
+import com.example.bestapp.network.ConnectionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +26,12 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
     val apiRepository = ApiRepository() // Публичный для доступа из Fragment
     private val prefsManager = PreferencesManager.getInstance(application)
     
+    // WebSocket менеджер для real-time обновлений
+    private val webSocketManager = WebSocketManager(scope = viewModelScope)
+    
     companion object {
         private const val TAG = "OrdersViewModel"
+        private const val FALLBACK_POLLING_INTERVAL_MS = 60_000L // Fallback polling каждую минуту
     }
     
     private val _newOrders = MutableStateFlow<List<Order>>(emptyList())
@@ -91,48 +97,163 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
     }
     
     /**
-     * Наблюдает за статусом смены и запускает/останавливает автоматическое обновление заявок
+     * Наблюдает за статусом смены и управляет WebSocket подключением
      */
     private fun observeShiftStatusAndStartPolling() {
         viewModelScope.launch {
             _isShiftActive.collect { isActive ->
                 if (isActive) {
-                    // Мастер на смене - запускаем периодическое обновление
-                    startPollingAssignments()
+                    // Мастер на смене - подключаемся к WebSocket
+                    connectWebSocket()
                 } else {
-                    // Мастер не на смене - останавливаем обновление
-                    stopPollingAssignments()
+                    // Мастер не на смене - отключаемся от WebSocket
+                    disconnectWebSocket()
+                }
+            }
+        }
+        
+        // Наблюдаем за WebSocket событиями
+        observeWebSocketEvents()
+    }
+    
+    /**
+     * Подключение к WebSocket для real-time обновлений
+     */
+    private fun connectWebSocket() {
+        val token = RetrofitClient.getToken()
+        if (token.isNullOrEmpty()) {
+            Log.w(TAG, "⚠️ Нет токена для WebSocket подключения")
+            startFallbackPolling() // Запускаем fallback polling
+            return
+        }
+        
+        Log.d(TAG, "🔌 Подключение к WebSocket для real-time обновлений")
+        webSocketManager.connect(token)
+    }
+    
+    /**
+     * Отключение от WebSocket
+     */
+    private fun disconnectWebSocket() {
+        Log.d(TAG, "🔌 Отключение от WebSocket")
+        webSocketManager.disconnect()
+        stopFallbackPolling()
+    }
+    
+    /**
+     * Наблюдение за WebSocket событиями
+     */
+    private fun observeWebSocketEvents() {
+        // Новые назначения
+        viewModelScope.launch {
+            webSocketManager.newAssignment.collect { event ->
+                event?.let {
+                    Log.d(TAG, "🆕 WebSocket: Получена новая заявка #${it.id}")
+                    // Обновляем список заявок через API для получения полных данных
+                    loadNewOrders()
+                    webSocketManager.clearNewAssignment()
+                }
+            }
+        }
+        
+        // Истекшие назначения
+        viewModelScope.launch {
+            webSocketManager.expiredAssignment.collect { assignmentId ->
+                assignmentId?.let {
+                    Log.d(TAG, "⏰ WebSocket: Заявка #$it истекла")
+                    // Удаляем из списка новых заявок
+                    removeExpiredAssignment(it)
+                    webSocketManager.clearExpiredAssignment()
+                }
+            }
+        }
+        
+        // Обновления статуса заказа
+        viewModelScope.launch {
+            webSocketManager.orderStatusUpdate.collect { update ->
+                update?.let {
+                    Log.d(TAG, "📝 WebSocket: Обновление статуса заказа #${it.orderId}: ${it.newStatus}")
+                    // Обновляем список заказов
+                    loadNewOrders()
+                    loadCompletedOrders()
+                    webSocketManager.clearOrderStatusUpdate()
+                }
+            }
+        }
+        
+        // Состояние подключения - запускаем fallback polling при ошибке
+        viewModelScope.launch {
+            webSocketManager.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        Log.d(TAG, "✅ WebSocket подключен")
+                        stopFallbackPolling() // Останавливаем fallback
+                    }
+                    is ConnectionState.Error -> {
+                        Log.e(TAG, "❌ Ошибка WebSocket: ${state.message}")
+                        // Запускаем fallback polling при ошибке WebSocket
+                        if (_isShiftActive.value) {
+                            startFallbackPolling()
+                        }
+                    }
+                    is ConnectionState.Disconnected -> {
+                        Log.w(TAG, "⚠️ WebSocket отключен")
+                        // Запускаем fallback polling при отключении
+                        if (_isShiftActive.value) {
+                            startFallbackPolling()
+                        }
+                    }
+                    is ConnectionState.Connecting -> {
+                        Log.d(TAG, "🔄 Подключение к WebSocket...")
+                    }
                 }
             }
         }
     }
     
     /**
-     * Запускает периодическое обновление заявок (каждые 30 секунд)
+     * Удаление истекшего назначения из списка
      */
-    private fun startPollingAssignments() {
-        // Останавливаем предыдущий polling, если он есть
-        stopPollingAssignments()
+    private fun removeExpiredAssignment(assignmentId: Int) {
+        val currentOrders = _newOrders.value.toMutableList()
+        val orderToRemove = currentOrders.find { it.assignmentId == assignmentId }
+        if (orderToRemove != null) {
+            currentOrders.remove(orderToRemove)
+            _newOrders.value = currentOrders
+            Log.d(TAG, "🗑️ Истекшая заявка #$assignmentId удалена из списка")
+        }
+    }
+    
+    /**
+     * Fallback polling на случай проблем с WebSocket (каждую минуту)
+     */
+    private fun startFallbackPolling() {
+        if (pollingJob?.isActive == true) {
+            Log.d(TAG, "Fallback polling уже запущен")
+            return
+        }
         
+        Log.d(TAG, "⚠️ Запуск fallback polling (каждые 60 сек)")
         pollingJob = viewModelScope.launch {
             while (isActive && _isShiftActive.value) {
-                delay(30000) // 30 секунд
-                if (_isShiftActive.value) {
-                    Log.d(TAG, "🔄 Автоматическое обновление заявок (polling)")
+                delay(FALLBACK_POLLING_INTERVAL_MS)
+                if (_isShiftActive.value && !webSocketManager.isConnected()) {
+                    Log.d(TAG, "🔄 Fallback polling: обновление заявок")
                     loadNewOrders()
                 }
             }
         }
-        Log.d(TAG, "✅ Автоматическое обновление заявок запущено (каждые 30 сек)")
     }
     
     /**
-     * Останавливает периодическое обновление заявок
+     * Остановка fallback polling
      */
-    private fun stopPollingAssignments() {
-        pollingJob?.cancel()
-        pollingJob = null
-        Log.d(TAG, "⏹️ Автоматическое обновление заявок остановлено")
+    private fun stopFallbackPolling() {
+        if (pollingJob?.isActive == true) {
+            pollingJob?.cancel()
+            pollingJob = null
+            Log.d(TAG, "⏹️ Fallback polling остановлен")
+        }
     }
     
     /**

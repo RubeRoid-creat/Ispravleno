@@ -518,5 +518,23 @@ router.get('/services/health', async (req, res) => {
   }
 });
 
+// ============= WebSocket мониторинг =============
+router.get('/websocket/stats', async (req, res) => {
+  try {
+    const { getMasterSubscriptionsStats, getConnectedClientsCount } = await import('../websocket.js');
+    
+    const stats = getMasterSubscriptionsStats();
+    const totalConnected = getConnectedClientsCount();
+    
+    res.json({
+      ...stats,
+      totalConnected
+    });
+  } catch (error) {
+    console.error('Ошибка получения статистики WebSocket:', error);
+    res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+  }
+});
+
 export default router;
 

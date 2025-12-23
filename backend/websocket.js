@@ -6,6 +6,7 @@ import { query } from './database/db.js';
 let wss = null;
 const clients = new Map(); // userId -> WebSocket connection
 const orderRooms = new Map(); // orderId -> Set of userIds
+const masterSubscriptions = new Map(); // userId -> { subscribed: boolean, lastPing: Date }
 
 // Инициализация WebSocket сервера
 export function initWebSocket(server) {
@@ -47,6 +48,65 @@ export function initWebSocket(server) {
         // Ping-pong для поддержания соединения
         if (data.type === 'ping') {
           ws.send(JSON.stringify({ type: 'pong' }));
+          
+          // Обновляем время последнего ping для мастера
+          if (userId && masterSubscriptions.has(userId)) {
+            const subscription = masterSubscriptions.get(userId);
+            subscription.lastPing = new Date();
+          }
+        }
+        
+        // Подписка мастера на получение заявок
+        if (data.type === 'subscribe_assignments') {
+          if (!userId) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Требуется аутентификация'
+            }));
+            return;
+          }
+          
+          // Проверяем, что это мастер
+          const master = query.get(`
+            SELECT m.id, m.user_id, m.status, m.is_on_shift
+            FROM masters m
+            WHERE m.user_id = ?
+          `, [userId]);
+          
+          if (!master) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Пользователь не является мастером'
+            }));
+            return;
+          }
+          
+          // Добавляем подписку
+          masterSubscriptions.set(userId, {
+            subscribed: true,
+            lastPing: new Date(),
+            masterId: master.id,
+            onShift: master.is_on_shift === 1
+          });
+          
+          ws.send(JSON.stringify({
+            type: 'subscribed_assignments',
+            message: 'Подписка на заявки активирована'
+          }));
+          
+          console.log(`📋 Мастер #${master.id} подписался на заявки через WebSocket`);
+        }
+        
+        // Отписка от получения заявок
+        if (data.type === 'unsubscribe_assignments') {
+          if (userId && masterSubscriptions.has(userId)) {
+            masterSubscriptions.delete(userId);
+            ws.send(JSON.stringify({
+              type: 'unsubscribed_assignments',
+              message: 'Подписка на заявки отменена'
+            }));
+            console.log(`📋 Мастер #${userId} отписался от заявок`);
+          }
         }
         
         // Подписка на чат заказа
@@ -220,6 +280,16 @@ export function initWebSocket(server) {
     ws.on('close', () => {
       if (userId) {
         clients.delete(userId);
+        masterSubscriptions.delete(userId);
+        
+        // Удаляем из всех комнат заказов
+        orderRooms.forEach((room, orderId) => {
+          room.delete(userId);
+          if (room.size === 0) {
+            orderRooms.delete(orderId);
+          }
+        });
+        
         console.log(`❌ WebSocket отключен: пользователь #${userId}`);
       }
     });
@@ -273,13 +343,146 @@ export function getConnectedClientsCount() {
   return clients.size;
 }
 
+// Отправка нового назначения мастеру через WebSocket
+export function notifyMasterAssignment(masterId, assignmentData) {
+  // Находим userId мастера
+  const master = query.get('SELECT user_id FROM masters WHERE id = ?', [masterId]);
+  if (!master) {
+    console.warn(`⚠️ Мастер #${masterId} не найден для WebSocket уведомления`);
+    return false;
+  }
+  
+  const userId = master.user_id;
+  
+  // Проверяем подписку мастера
+  const subscription = masterSubscriptions.get(userId);
+  if (!subscription || !subscription.subscribed) {
+    console.log(`📋 Мастер #${masterId} не подписан на WebSocket уведомления`);
+    return false;
+  }
+  
+  // Отправляем уведомление о новом назначении
+  const message = {
+    type: 'new_assignment',
+    assignment: assignmentData
+  };
+  
+  const sent = sendToUser(userId, message);
+  
+  if (sent) {
+    console.log(`📋 ✅ Отправлено WebSocket уведомление мастеру #${masterId} о новом назначении #${assignmentData.id}`);
+  } else {
+    console.log(`📋 ❌ Не удалось отправить WebSocket уведомление мастеру #${masterId}`);
+  }
+  
+  return sent;
+}
+
+// Уведомление об истечении назначения
+export function notifyAssignmentExpired(masterId, assignmentId) {
+  const master = query.get('SELECT user_id FROM masters WHERE id = ?', [masterId]);
+  if (!master) return false;
+  
+  const message = {
+    type: 'assignment_expired',
+    assignmentId: assignmentId
+  };
+  
+  return sendToUser(master.user_id, message);
+}
+
+// Уведомление об обновлении статуса заказа
+export function notifyOrderStatusUpdate(orderId, newStatus) {
+  // Получаем участников заказа
+  const order = query.get(`
+    SELECT o.id, o.client_id, o.assigned_master_id, 
+           c.user_id as client_user_id, m.user_id as master_user_id
+    FROM orders o
+    LEFT JOIN clients c ON o.client_id = c.id
+    LEFT JOIN masters m ON o.assigned_master_id = m.id
+    WHERE o.id = ?
+  `, [orderId]);
+  
+  if (!order) return 0;
+  
+  const message = {
+    type: 'order_status_update',
+    orderId: orderId,
+    newStatus: newStatus,
+    timestamp: new Date().toISOString()
+  };
+  
+  let sentCount = 0;
+  
+  // Уведомляем клиента
+  if (order.client_user_id) {
+    if (sendToUser(order.client_user_id, message)) sentCount++;
+  }
+  
+  // Уведомляем мастера
+  if (order.master_user_id) {
+    if (sendToUser(order.master_user_id, message)) sentCount++;
+  }
+  
+  return sentCount;
+}
+
+// Получить статистику подписок мастеров
+export function getMasterSubscriptionsStats() {
+  const stats = {
+    totalSubscribed: masterSubscriptions.size,
+    activeSubscriptions: 0,
+    onShiftSubscriptions: 0,
+    subscriptions: []
+  };
+  
+  const now = new Date();
+  
+  masterSubscriptions.forEach((subscription, userId) => {
+    const timeSinceLastPing = now - subscription.lastPing;
+    const isActive = timeSinceLastPing < 60000; // активен если ping был менее минуты назад
+    
+    if (isActive) stats.activeSubscriptions++;
+    if (subscription.onShift) stats.onShiftSubscriptions++;
+    
+    stats.subscriptions.push({
+      userId,
+      masterId: subscription.masterId,
+      subscribed: subscription.subscribed,
+      onShift: subscription.onShift,
+      lastPing: subscription.lastPing,
+      isActive
+    });
+  });
+  
+  return stats;
+}
+
+// Периодическая очистка неактивных подписок
+setInterval(() => {
+  const now = new Date();
+  const timeout = 5 * 60 * 1000; // 5 минут без ping
+  
+  masterSubscriptions.forEach((subscription, userId) => {
+    const timeSinceLastPing = now - subscription.lastPing;
+    if (timeSinceLastPing > timeout) {
+      console.log(`⏰ Удаление неактивной подписки мастера #${userId} (${Math.floor(timeSinceLastPing / 1000)}s без ping)`);
+      masterSubscriptions.delete(userId);
+    }
+  });
+}, 60000); // Проверка каждую минуту
+
 export default {
   initWebSocket,
   sendToUser,
   broadcastToMaster,
   broadcastToClient,
   broadcastToAll,
-  getConnectedClientsCount
+  getConnectedClientsCount,
+  notifyMasterAssignment,
+  notifyAssignmentExpired,
+  notifyOrderStatusUpdate,
+  getMasterSubscriptionsStats
 };
 
 

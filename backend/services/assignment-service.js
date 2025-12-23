@@ -1,6 +1,6 @@
 import { query } from '../database/db.js';
 import { config } from '../config.js';
-import { broadcastToMaster } from '../websocket.js';
+import { broadcastToMaster, notifyMasterAssignment, notifyAssignmentExpired } from '../websocket.js';
 import { hasActivePromotion } from './promotion-service.js';
 
 // Хранилище таймеров для назначений
@@ -252,27 +252,20 @@ export function createAssignment(orderId, masterId, attemptNumber = 1) {
     `, [assignmentId]);
     
     // Отправляем уведомление мастеру через WebSocket (только базовая информация для pending)
-    const master = query.get('SELECT user_id FROM masters WHERE id = ?', [masterId]);
-    if (master && fullAssignment) {
+    if (fullAssignment) {
       // Фильтруем данные - показываем только базовую информацию до принятия
       const filteredAssignment = filterAssignmentData(fullAssignment, false);
       
-      console.log(`📤 Отправка WebSocket уведомления мастеру user_id=${master.user_id} о назначении #${assignmentId}`);
-      console.log(`   Данные назначения:`, JSON.stringify(filteredAssignment, null, 2));
+      console.log(`📤 Отправка WebSocket уведомления мастеру #${masterId} о назначении #${assignmentId}`);
       
-      const sent = broadcastToMaster(master.user_id, {
-        type: 'new_assignment',
-        assignment: filteredAssignment
-      });
+      const sent = notifyMasterAssignment(masterId, filteredAssignment);
       
-      if (sent) {
-        console.log(`✅ WebSocket уведомление отправлено мастеру user_id=${master.user_id}`);
-      } else {
-        console.log(`⚠️ WebSocket уведомление НЕ отправлено - мастер user_id=${master.user_id} не подключен к WebSocket`);
+      if (!sent) {
+        console.log(`⚠️ WebSocket уведомление НЕ отправлено - мастер #${masterId} не подключен или не подписан`);
         console.log(`   Мастер получит заявку при следующем запросе через API /api/assignments`);
       }
     } else {
-      console.error(`❌ Не удалось отправить уведомление: master=${master ? 'found' : 'NOT FOUND'}, assignment=${fullAssignment ? 'found' : 'NOT FOUND'}`);
+      console.error(`❌ Не удалось отправить уведомление: assignment=${fullAssignment ? 'found' : 'NOT FOUND'}`);
     }
     
     // Возвращаем полную информацию для внутреннего использования
@@ -314,6 +307,12 @@ export function handleAssignmentExpiration(assignmentId, orderId) {
       );
       
       console.log(`⏱️ Время ответа истекло для назначения #${assignmentId} заказа #${orderId}`);
+      
+      // Получаем master_id из назначения и уведомляем через WebSocket
+      const fullAssignment = query.get('SELECT master_id FROM order_assignments WHERE id = ?', [assignmentId]);
+      if (fullAssignment) {
+        notifyAssignmentExpired(fullAssignment.master_id, assignmentId);
+      }
       
       // Ищем следующего мастера
       findNextMaster(orderId);
