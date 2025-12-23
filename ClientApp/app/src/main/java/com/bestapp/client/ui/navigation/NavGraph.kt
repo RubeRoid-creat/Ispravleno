@@ -26,6 +26,11 @@ import com.bestapp.client.ui.promotions.PromotionsScreen
 import com.bestapp.client.ui.settings.SettingsScreen
 import com.bestapp.client.ui.help.HelpScreen
 import com.bestapp.client.ui.payments.PaymentsScreen
+import com.bestapp.client.ui.catalog.DeviceCatalogScreen
+import com.bestapp.client.ui.catalog.ProblemSelectorScreen
+import com.bestapp.client.ui.devices.MyDevicesScreen
+import com.bestapp.client.ui.addresses.AddressesScreen
+import com.bestapp.client.ui.notifications.NotificationSettingsScreen
 
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome")
@@ -54,6 +59,13 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object Help : Screen("help")
     object Payments : Screen("payments")
+    object DeviceCatalog : Screen("device_catalog")
+    object ProblemSelector : Screen("problem_selector/{deviceId}") {
+        fun createRoute(deviceId: String) = "problem_selector/$deviceId"
+    }
+    object MyDevices : Screen("my_devices")
+    object Addresses : Screen("addresses")
+    object NotificationSettings : Screen("notification_settings")
 }
 
 @Composable
@@ -163,6 +175,46 @@ fun NavGraph(
         
         composable(Screen.Payments.route) {
             PaymentsScreen(navController)
+        }
+        
+        composable(Screen.DeviceCatalog.route) {
+            DeviceCatalogScreen(
+                navController = navController,
+                onDeviceSelected = { device ->
+                    // Здесь можно обработать выбор устройства
+                    // Например, перейти к выбору проблемы или сразу к созданию заказа
+                }
+            )
+        }
+        
+        composable(
+            route = Screen.ProblemSelector.route,
+            arguments = listOf(navArgument("deviceId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val deviceId = backStackEntry.arguments?.getString("deviceId") ?: ""
+            val device = com.bestapp.client.data.models.DeviceCatalog.getDeviceById(deviceId)
+            if (device != null) {
+                ProblemSelectorScreen(
+                    navController = navController,
+                    device = device,
+                    onProblemSelected = { problem ->
+                        // Здесь можно обработать выбор проблемы
+                        // Например, перейти к созданию заказа с предзаполненными данными
+                    }
+                )
+            }
+        }
+        
+        composable(Screen.MyDevices.route) {
+            MyDevicesScreen(navController)
+        }
+        
+        composable(Screen.Addresses.route) {
+            AddressesScreen(navController)
+        }
+        
+        composable(Screen.NotificationSettings.route) {
+            NotificationSettingsScreen(navController)
         }
     }
 }

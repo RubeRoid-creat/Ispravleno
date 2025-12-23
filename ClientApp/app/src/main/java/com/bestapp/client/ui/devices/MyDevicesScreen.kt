@@ -12,9 +12,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.bestapp.client.ui.navigation.Screen
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -25,6 +30,7 @@ import java.util.*
  * - Быстрый заказ ремонта для сохраненной техники
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("EXPERIMENTAL_API_USAGE")
 @Composable
 fun MyDevicesScreen(
     navController: NavController,
@@ -159,9 +165,7 @@ fun DevicesStatisticsCard(
                 value = totalDevices.toString()
             )
             
-            Divider(modifier = Modifier
-                .width(1.dp)
-                .height(48.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             
             StatItem(
                 icon = Icons.Default.Notifications,
@@ -475,6 +479,7 @@ fun ErrorState(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddDeviceDialog(
     onDismiss: () -> Unit,
@@ -614,12 +619,12 @@ data class ClientDevice(
 )
 
 // ViewModel
-class MyDevicesViewModel : androidx.lifecycle.ViewModel() {
-    private val _uiState = kotlinx.coroutines.flow.MutableStateFlow(MyDevicesUiState())
-    val uiState: kotlinx.coroutines.flow.StateFlow<MyDevicesUiState> = _uiState
+class MyDevicesViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(MyDevicesUiState())
+    val uiState: StateFlow<MyDevicesUiState> = _uiState
     
     fun loadDevices() {
-        androidx.lifecycle.viewModelScope.launch {
+        viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             
             // TODO: Загрузка с сервера
@@ -659,7 +664,7 @@ class MyDevicesViewModel : androidx.lifecycle.ViewModel() {
     }
     
     fun addDevice(deviceType: String, brand: String, model: String?) {
-        androidx.lifecycle.viewModelScope.launch {
+        viewModelScope.launch {
             // TODO: Отправка на сервер
             loadDevices()
         }
