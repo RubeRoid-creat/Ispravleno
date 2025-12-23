@@ -350,7 +350,7 @@ initWebSocket(server);
 // Базовый маршрут
 app.get('/', (req, res) => {
   res.json({
-    message: 'BestApp API Server',
+    message: 'Исправлено API Server',
     version: '1.0.0',
     status: 'running',
     endpoints: {
@@ -438,7 +438,7 @@ app.use((error, req, res, next) => {
 server.listen(config.port, '0.0.0.0', () => {
   console.log('');
   console.log('🚀 =====================================================');
-  console.log(`   BestApp Backend Server запущен!`);
+  console.log(`   Исправлено Backend Server запущен!`);
   console.log('   =====================================================');
   console.log(`   🌐 HTTP Server:  http://localhost:${config.port}`);
   console.log(`   🔌 WebSocket:    ws://localhost:${config.port}/ws`);

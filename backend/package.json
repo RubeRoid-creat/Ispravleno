@@ -1,7 +1,7 @@
 {
-  "name": "bestapp-backend",
+  "name": "ispravleno-backend",
   "version": "1.0.0",
-  "description": "Backend API для приложения BestApp - сервис вызова мастеров",
+  "description": "Backend API для приложения Исправлено - сервис вызова мастеров",
   "main": "server.js",
   "type": "module",
   "scripts": {
