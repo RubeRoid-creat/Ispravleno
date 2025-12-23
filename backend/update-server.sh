@@ -23,6 +23,13 @@ npm install --production
 if [ -d "admin-panel" ]; then
     echo "📦 Обновляем админ-панель..."
     cd admin-panel
+    
+    # Создаем .env.production с правильным API URL
+    if [ ! -f ".env.production" ]; then
+        echo "📝 Создание .env.production..."
+        echo "VITE_API_URL=http://212.74.227.208:3000/api" > .env.production
+    fi
+    
     npm install
     npm run build
     cd ..
