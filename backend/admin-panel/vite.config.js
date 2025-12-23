@@ -12,4 +12,12 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
   },
+  server: {
+    port: 3001,
+    host: '0.0.0.0',
+  },
+  preview: {
+    port: 3001,
+    host: '0.0.0.0',
+  },
 })
