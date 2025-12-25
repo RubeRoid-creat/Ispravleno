@@ -67,13 +67,20 @@ export default function Orders() {
   useEffect(() => {
     if (assignDialog.open) {
       // Загружаем мастеров при открытии диалога
+      loadMasters('');
+    }
+  }, [assignDialog.open]);
+  
+  useEffect(() => {
+    if (assignDialog.open && masterSearch) {
+      // Debounce для поиска
       const timer = setTimeout(() => {
         loadMasters(masterSearch);
-      }, 300); // Debounce для поиска
+      }, 300);
       
       return () => clearTimeout(timer);
     }
-  }, [assignDialog.open, masterSearch]);
+  }, [masterSearch, assignDialog.open]);
 
   const handleAssign = async () => {
     if (!selectedMaster) {
@@ -221,7 +228,7 @@ export default function Orders() {
             }}
             onInputChange={(event, newInputValue) => {
               setMasterSearch(newInputValue);
-              loadMasters(newInputValue);
+              // Поиск будет выполняться через useEffect с debounce
             }}
             inputValue={masterSearch}
             renderInput={(params) => (
