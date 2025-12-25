@@ -80,14 +80,8 @@ class OrdersAdapter(
         private val orderPhone: TextView = itemView.findViewById(R.id.order_phone)
         private val orderAddress: TextView = itemView.findViewById(R.id.order_address)
         private val orderProblem: TextView = itemView.findViewById(R.id.order_problem)
-        private val orderArrivalTime: TextView = itemView.findViewById(R.id.order_arrival_time)
         private val orderTimer: TextView = itemView.findViewById(R.id.order_timer)
         private val orderDate: TextView = itemView.findViewById(R.id.order_date)
-        private val orderCost: TextView = itemView.findViewById(R.id.order_cost)
-        private val orderDistance: TextView = itemView.findViewById(R.id.order_distance)
-        private val orderTime: TextView = itemView.findViewById(R.id.order_time)
-        private val distanceSeparator: View = itemView.findViewById(R.id.distance_separator)
-        private val timeContainer: View = itemView.findViewById(R.id.time_container)
         private val orderCheckbox: androidx.appcompat.widget.AppCompatCheckBox = itemView.findViewById(R.id.order_checkbox)
         private val actionButtonsContainer: View = itemView.findViewById(R.id.action_buttons_container)
         private val btnAcceptOrder: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.btn_accept_order)
@@ -140,38 +134,9 @@ class OrdersAdapter(
             orderAddress.text = "📍 ${order.clientAddress}"
             orderProblem.text = order.problemDescription
             
-            // Расстояние и время в пути
-            if (order.distance != null) {
-                val distanceKm = order.distance / 1000.0
-                orderDistance.text = if (distanceKm < 1) {
-                    "${order.distance.toInt()} м"
-                } else {
-                    String.format("%.1f км", distanceKm)
-                }
-                orderDistance.visibility = View.VISIBLE
-                distanceSeparator.visibility = View.VISIBLE
-                
-                // Рассчитываем примерное время в пути (средняя скорость 40 км/ч в городе)
-                val estimatedTimeMinutes = (order.distance / 1000.0 / 40.0 * 60.0).toInt() + 1
-                orderTime.text = "$estimatedTimeMinutes мин"
-                timeContainer.visibility = View.VISIBLE
-            } else {
-                orderDistance.visibility = View.GONE
-                distanceSeparator.visibility = View.GONE
-                timeContainer.visibility = View.GONE
-            }
-            
             // Останавливаем предыдущий таймер
             currentTimer?.stop()
             currentTimer = null
-            
-            // Время приезда
-            if (order.arrivalTime != null) {
-                orderArrivalTime.text = "⏰ Приезд: ${order.arrivalTime}"
-                orderArrivalTime.visibility = View.VISIBLE
-            } else {
-                orderArrivalTime.visibility = View.GONE
-            }
             
             // Таймер обратного отсчета (для срочных заказов с назначением)
             if (order.expiresAt != null && order.status == com.example.bestapp.data.RepairStatus.NEW) {
@@ -201,7 +166,6 @@ class OrdersAdapter(
             }
             
             orderDate.text = order.getFormattedCreatedDate()
-            orderCost.text = order.getFormattedCost()
             
             // Показываем кнопки Принять/Отклонить только для pending заявок
             val isPendingAssignment = order.assignmentStatus == "pending" && order.assignmentId != null

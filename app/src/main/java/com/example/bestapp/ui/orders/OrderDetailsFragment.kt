@@ -76,17 +76,10 @@ class OrderDetailsFragment : Fragment() {
     private var clientName: TextView? = null
     private var clientPhone: TextView? = null
     private var clientEmail: TextView? = null
-    private var preferredContactMethod: TextView? = null
     private var clientAddress: TextView? = null
     private var addressDetails: TextView? = null
     private var addressLandmark: TextView? = null
-    private var arrivalTime: TextView? = null
     private var desiredRepairDate: TextView? = null
-    private var urgencyText: TextView? = null
-    private var intercomWorking: TextView? = null
-    private var parkingAvailable: TextView? = null
-    private var hasPets: TextView? = null
-    private var hasSmallChildren: TextView? = null
     private var deviceInfo: TextView? = null
     private var deviceCategory: TextView? = null
     private var deviceModel: TextView? = null
@@ -103,10 +96,6 @@ class OrderDetailsFragment : Fragment() {
     private var problemAttemptedFixes: TextView? = null
     private var problemCategory: TextView? = null
     private var problemTagsGroup: com.google.android.material.chip.ChipGroup? = null
-    private var orderCost: TextView? = null
-    private var orderCostHeader: TextView? = null
-    private var orderDistanceHeader: TextView? = null
-    private var orderTimeHeader: TextView? = null
     private var clientBudget: TextView? = null
     private var paymentType: TextView? = null
     private var finalCost: TextView? = null
@@ -182,17 +171,10 @@ class OrderDetailsFragment : Fragment() {
         clientName = view.findViewById(R.id.client_name)
         clientPhone = view.findViewById(R.id.client_phone)
         clientEmail = view.findViewById(R.id.client_email)
-        preferredContactMethod = view.findViewById(R.id.preferred_contact_method)
         clientAddress = view.findViewById(R.id.client_address)
         addressDetails = view.findViewById(R.id.address_details)
         addressLandmark = view.findViewById(R.id.address_landmark)
-        arrivalTime = view.findViewById(R.id.arrival_time)
         desiredRepairDate = view.findViewById(R.id.desired_repair_date)
-        urgencyText = view.findViewById(R.id.urgency_text)
-        intercomWorking = view.findViewById(R.id.intercom_working)
-        parkingAvailable = view.findViewById(R.id.parking_available)
-        hasPets = view.findViewById(R.id.has_pets)
-        hasSmallChildren = view.findViewById(R.id.has_small_children)
         deviceInfo = view.findViewById(R.id.device_info)
         deviceCategory = view.findViewById(R.id.device_category)
         deviceModel = view.findViewById(R.id.device_model)
@@ -207,10 +189,6 @@ class OrderDetailsFragment : Fragment() {
         problemAttemptedFixes = view.findViewById(R.id.problem_attempted_fixes)
         problemCategory = view.findViewById(R.id.problem_category)
         problemTagsGroup = view.findViewById(R.id.problem_tags_group)
-        orderCost = view.findViewById(R.id.order_cost)
-        orderCostHeader = view.findViewById(R.id.order_cost_header)
-        orderDistanceHeader = view.findViewById(R.id.order_distance_header)
-        orderTimeHeader = view.findViewById(R.id.order_time_header)
         clientBudget = view.findViewById(R.id.client_budget)
         paymentType = view.findViewById(R.id.payment_type)
         finalCost = view.findViewById(R.id.final_cost)
@@ -406,17 +384,10 @@ class OrderDetailsFragment : Fragment() {
         clientName?.text = ""
         clientPhone?.text = ""
         clientEmail?.text = ""
-        preferredContactMethod?.text = ""
         clientAddress?.text = ""
         addressDetails?.text = ""
         addressLandmark?.text = ""
-        arrivalTime?.text = ""
         desiredRepairDate?.text = ""
-        urgencyText?.text = ""
-        intercomWorking?.text = ""
-        parkingAvailable?.text = ""
-        hasPets?.text = ""
-        hasSmallChildren?.text = ""
         deviceInfo?.text = ""
         deviceCategory?.text = ""
         deviceModel?.text = ""
@@ -431,7 +402,6 @@ class OrderDetailsFragment : Fragment() {
         problemAttemptedFixes?.text = ""
         problemCategory?.text = ""
         problemTagsGroup?.removeAllViews()
-        orderCost?.text = ""
         clientBudget?.text = ""
         paymentType?.text = ""
         finalCost?.text = ""
@@ -449,15 +419,9 @@ class OrderDetailsFragment : Fragment() {
         mediaCard?.visibility = View.GONE
         mediaSectionTitle?.visibility = View.GONE
         clientEmail?.visibility = View.GONE
-        preferredContactMethod?.visibility = View.GONE
         addressDetails?.visibility = View.GONE
         addressLandmark?.visibility = View.GONE
         desiredRepairDate?.visibility = View.GONE
-        urgencyText?.visibility = View.GONE
-        intercomWorking?.visibility = View.GONE
-        parkingAvailable?.visibility = View.GONE
-        hasPets?.visibility = View.GONE
-        hasSmallChildren?.visibility = View.GONE
     }
     
     private fun updateUI() {
@@ -500,7 +464,6 @@ class OrderDetailsFragment : Fragment() {
             } ?: run { priorityText?.visibility = View.GONE }
             
             orderDate?.text = order.getFormattedCreatedDate()
-            orderCost?.text = order.getFormattedCost()
             
             // Информация о клиенте
             clientName?.text = "👤 ${order.clientName}"
@@ -510,16 +473,6 @@ class OrderDetailsFragment : Fragment() {
                 clientEmail?.text = "✉️ Email: $email"
                 clientEmail?.visibility = View.VISIBLE
             } ?: run { clientEmail?.visibility = View.GONE }
-            
-            apiOrder?.preferredContactMethod?.let { method ->
-                preferredContactMethod?.text = "Предпочтительный способ связи: ${when(method) {
-                    "call" -> "Звонок"
-                    "sms" -> "SMS"
-                    "chat" -> "Чат"
-                    else -> method
-                }}"
-                preferredContactMethod?.visibility = View.VISIBLE
-            } ?: run { preferredContactMethod?.visibility = View.GONE }
             
             // Адрес
             clientAddress?.text = "📍 ${order.clientAddress}"
@@ -553,43 +506,10 @@ class OrderDetailsFragment : Fragment() {
             } ?: run { addressLandmark?.visibility = View.GONE }
             
             // Временные параметры
-            arrivalTime?.text = "⏰ Приезд: ${order.arrivalTime ?: "не указано"}"
-            
             apiOrder?.desiredRepairDate?.let { date ->
                 desiredRepairDate?.text = "Желаемая дата ремонта: $date"
                 desiredRepairDate?.visibility = View.VISIBLE
             } ?: run { desiredRepairDate?.visibility = View.GONE }
-            
-            apiOrder?.urgency?.let { urgency ->
-                urgencyText?.text = "Срочность: ${when(urgency) {
-                    "emergency" -> "Экстренный (сегодня)"
-                    "urgent" -> "Срочный (завтра)"
-                    "planned" -> "Плановый (в течение недели)"
-                    else -> urgency
-                }}"
-                urgencyText?.visibility = View.VISIBLE
-            } ?: run { urgencyText?.visibility = View.GONE }
-            
-            // Особенности доступа
-            apiOrder?.intercomWorking?.let { working ->
-                intercomWorking?.text = "Домофон: ${if (working == 1) "Работает" else "Не работает"}"
-                intercomWorking?.visibility = View.VISIBLE
-            } ?: run { intercomWorking?.visibility = View.GONE }
-            
-            apiOrder?.parkingAvailable?.let { parking ->
-                parkingAvailable?.text = "Парковка: ${if (parking == 1) "Доступна" else "Недоступна"}"
-                parkingAvailable?.visibility = View.VISIBLE
-            } ?: run { parkingAvailable?.visibility = View.GONE }
-            
-            apiOrder?.hasPets?.let { pets ->
-                hasPets?.text = "Домашние животные: ${if (pets == 1) "Да" else "Нет"}"
-                hasPets?.visibility = View.VISIBLE
-            } ?: run { hasPets?.visibility = View.GONE }
-            
-            apiOrder?.hasSmallChildren?.let { children ->
-                hasSmallChildren?.text = "Маленькие дети: ${if (children == 1) "Да" else "Нет"}"
-                hasSmallChildren?.visibility = View.VISIBLE
-            } ?: run { hasSmallChildren?.visibility = View.GONE }
             
             // Информация о технике
             deviceInfo?.text = "${order.deviceType} ${order.getDeviceFullName()}"
@@ -1344,17 +1264,10 @@ class OrderDetailsFragment : Fragment() {
         clientName = null
         clientPhone = null
         clientEmail = null
-        preferredContactMethod = null
         clientAddress = null
         addressDetails = null
         addressLandmark = null
-        arrivalTime = null
         desiredRepairDate = null
-        urgencyText = null
-        intercomWorking = null
-        parkingAvailable = null
-        hasPets = null
-        hasSmallChildren = null
         deviceInfo = null
         deviceCategory = null
         deviceModel = null
@@ -1371,7 +1284,6 @@ class OrderDetailsFragment : Fragment() {
         problemAttemptedFixes = null
         problemCategory = null
         problemTagsGroup = null
-        orderCost = null
         clientBudget = null
         paymentType = null
         finalCost = null

@@ -55,10 +55,6 @@ class OrdersMapFragment : Fragment() {
     private var tvDestinationAddress: TextView? = null
     private var tvOrderDevice: TextView? = null
     private var tvOrderInfo: TextView? = null
-    private var tvOrderPrice: TextView? = null
-    private var tvRecommendedPrice: TextView? = null
-    private var btnDecreasePrice: MaterialButton? = null
-    private var btnIncreasePrice: MaterialButton? = null
     private var btnAcceptOrder: MaterialButton? = null
     private var btnEditPickup: MaterialButton? = null
     private var btnAddDestination: ImageButton? = null
@@ -85,9 +81,6 @@ class OrdersMapFragment : Fragment() {
     
     // Маршрут (упрощенный - простая линия между точками)
     
-    // Редактирование цены
-    private var currentPrice: Double = 0.0
-    private var recommendedPrice: Double = 0.0
     
     // Регистрация для запроса разрешений на геолокацию
     private val requestPermissionLauncher = registerForActivityResult(
@@ -156,10 +149,6 @@ class OrdersMapFragment : Fragment() {
         tvDestinationAddress = view.findViewById(R.id.tv_destination_address)
         tvOrderDevice = view.findViewById(R.id.tv_order_device)
         tvOrderInfo = view.findViewById(R.id.tv_order_info)
-        tvOrderPrice = view.findViewById(R.id.tv_order_price)
-        tvRecommendedPrice = view.findViewById(R.id.tv_recommended_price)
-        btnDecreasePrice = view.findViewById(R.id.btn_decrease_price)
-        btnIncreasePrice = view.findViewById(R.id.btn_increase_price)
         btnAcceptOrder = view.findViewById(R.id.btn_accept_order)
         btnEditPickup = view.findViewById(R.id.btn_edit_pickup)
         btnAddDestination = view.findViewById(R.id.btn_add_destination)
@@ -186,18 +175,6 @@ class OrdersMapFragment : Fragment() {
     private fun setupButtons() {
         btnBack?.setOnClickListener {
             findNavController().navigateUp()
-        }
-        
-        btnDecreasePrice?.setOnClickListener {
-            if (currentPrice > 0) {
-                currentPrice -= 100.0
-                updatePriceDisplay()
-            }
-        }
-        
-        btnIncreasePrice?.setOnClickListener {
-            currentPrice += 100.0
-            updatePriceDisplay()
         }
         
         btnAcceptOrder?.setOnClickListener {
@@ -329,9 +306,6 @@ class OrdersMapFragment : Fragment() {
         return bitmap
     }
     
-    private fun updatePriceDisplay() {
-        tvOrderPrice?.text = String.format("%.0f ₽", currentPrice)
-    }
     
     private fun acceptOrder() {
         selectedOrder?.let { order ->
@@ -659,41 +633,11 @@ class OrdersMapFragment : Fragment() {
     
     private fun showOrderInfo(order: Order, distance: Double = 0.0) {
         selectedOrder = order
-        currentPrice = order.estimatedCost ?: 0.0
-        recommendedPrice = order.estimatedCost ?: 0.0
-        
-        // Вычисляем расстояние, если не передано
-        val calculatedDistance = if (distance > 0) distance else {
-            if (order.latitude != null && order.longitude != null) {
-                calculateDistance(masterLatitude, masterLongitude, order.latitude, order.longitude)
-            } else {
-                0.0
-            }
-        }
-        
-        // Вычисляем время в пути
-        val estimatedTime = if (calculatedDistance > 0) {
-            calculateEstimatedTime(calculatedDistance)
-        } else {
-            0
-        }
         
         // Обновляем новую панель
         tvOrderDevice?.text = order.getDeviceFullName()
         
-        // Обновляем информацию о расстоянии и времени
-        val distanceText = if (calculatedDistance > 0) {
-            val timeText = if (estimatedTime > 0) "$estimatedTime мин" else ""
-            "${formatDistance(calculatedDistance)}${if (timeText.isNotEmpty()) " • $timeText" else ""}"
-        } else {
-            "Расстояние не определено"
-        }
-        
-        tvOrderInfo?.text = distanceText
         tvDestinationAddress?.text = order.clientAddress
-        // tvOrderInfo уже обновлен выше с расстоянием и временем
-        tvRecommendedPrice?.text = "Рекомендуемая цена: ${order.getFormattedCost()}"
-        updatePriceDisplay()
         
         orderInfoCard?.visibility = View.VISIBLE
         
@@ -784,10 +728,6 @@ class OrdersMapFragment : Fragment() {
         tvDestinationAddress = null
         tvOrderDevice = null
         tvOrderInfo = null
-        tvOrderPrice = null
-        tvRecommendedPrice = null
-        btnDecreasePrice = null
-        btnIncreasePrice = null
         btnAcceptOrder = null
         btnEditPickup = null
         btnAddDestination = null
