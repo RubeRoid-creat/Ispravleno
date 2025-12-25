@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/windowBackground">
+    android:background="@android:color/white">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -70,7 +70,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="14sp"
-                    android:textColor="?android:attr/textColorTertiary"
+                    android:textColor="#000000"
                     tools:text="19 ноя 2025" />
 
             </LinearLayout>
@@ -82,7 +82,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="#212121"
+                android:textColor="#000000"
                 android:lineSpacingExtra="6dp"
                 android:layout_marginBottom="16dp"
                 tools:text="5 признаков того, что смартфон нуждается в ремонте" />
@@ -93,7 +93,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
-                android:textColor="#424242"
+                android:textColor="#000000"
                 android:lineSpacingExtra="4dp"
                 android:letterSpacing="0.01"
                 tools:text="Быстрая разрядка батареи, перегрев устройства, медленная работа, проблемы с сенсором и странные звуки - все это может указывать на серьезные проблемы. В этой статье мы рассмотрим каждый из этих признаков подробнее и расскажем, когда стоит обратиться к специалисту." />
