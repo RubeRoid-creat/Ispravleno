@@ -24,23 +24,23 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <TextView
+                android:id="@+id/text_work_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Описание работы"
-                android:layout_marginBottom="8dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"
+                tools:text="Замена экрана" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/input_work_description"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textMultiLine"
-                    android:minLines="1"
-                    android:maxLines="3"
-                    tools:text="Замена экрана" />
-
-            </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                android:id="@+id/text_work_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                tools:text="5000 ₽" />
 
         </LinearLayout>
 

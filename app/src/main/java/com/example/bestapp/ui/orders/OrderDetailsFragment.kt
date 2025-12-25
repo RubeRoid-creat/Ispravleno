@@ -27,6 +27,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.widget.LinearLayout
+import android.text.Editable
+import android.text.TextWatcher
 import kotlinx.coroutines.launch
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -788,17 +790,15 @@ class OrderDetailsFragment : Fragment() {
         recyclerParts.adapter = partsAdapter
         
         btnAddWork.setOnClickListener {
-            worksAdapter.addWork()
+            showPriceSelectionDialog(type = "service") { priceItem ->
+                worksAdapter.addWorkFromPrice(priceItem)
+            }
         }
         
         btnAddPart.setOnClickListener {
-            partsAdapter.addPart()
-        }
-        
-        // Предзаполняем первую работу проблемой из заказа (как подсказку)
-        val problemDescription = currentOrder?.problemDescription ?: currentApiOrder?.problemDescription
-        if (!problemDescription.isNullOrBlank()) {
-            worksAdapter.addWork(problemDescription)
+            showPriceSelectionDialog(type = "part") { priceItem ->
+                partsAdapter.addPartFromPrice(priceItem)
+            }
         }
         
         val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
@@ -810,6 +810,54 @@ class OrderDetailsFragment : Fragment() {
         
         dialog.setOnShowListener {
             val positiveButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+            
+            // Автоматический расчет стоимости на основе выбранных работ и запчастей
+            fun calculateTotalCost(): Double {
+                var total = 0.0
+                worksAdapter.getWorks().forEach { work ->
+                    total += work.price ?: 0.0
+                }
+                partsAdapter.getParts().forEach { part ->
+                    total += (part.cost * part.quantity)
+                }
+                return total
+            }
+            
+            fun updateFinalCost() {
+                val total = calculateTotalCost()
+                if (total > 0) {
+                    inputFinalCost.setText(String.format(Locale.getDefault(), "%.2f", total))
+                }
+            }
+            
+            // Обновляем стоимость при добавлении/удалении элементов
+            val worksObserver = object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                    updateFinalCost()
+                }
+                override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                    updateFinalCost()
+                }
+                override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+                    updateFinalCost()
+                }
+            }
+            
+            val partsObserver = object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                    updateFinalCost()
+                }
+                override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                    updateFinalCost()
+                }
+                override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+                    updateFinalCost()
+                }
+            }
+            
+            worksAdapter.registerAdapterDataObserver(worksObserver)
+            partsAdapter.registerAdapterDataObserver(partsObserver)
+            
             positiveButton.setOnClickListener {
                 val finalCost = inputFinalCost.text?.toString()?.toDoubleOrNull()
                 
@@ -832,7 +880,8 @@ class OrderDetailsFragment : Fragment() {
                     if (completedWorks.isNotEmpty()) {
                         appendLine("Выполненные работы:")
                         completedWorks.forEachIndexed { index, work ->
-                            appendLine("${index + 1}. $work")
+                            val price = if (work.price != null) String.format(Locale.getDefault(), " (%.0f ₽)", work.price) else ""
+                            appendLine("${index + 1}. ${work.description}$price")
                         }
                     }
                     
@@ -840,8 +889,9 @@ class OrderDetailsFragment : Fragment() {
                         if (isNotEmpty()) appendLine()
                         appendLine("Использованные запчасти:")
                         usedParts.forEachIndexed { index, part ->
-                            val cost = if (part.cost > 0) " (${part.cost} ₽)" else ""
-                            appendLine("${index + 1}. ${part.name} - ${part.quantity} шт.$cost")
+                            val totalCost = part.cost * part.quantity
+                            val costStr = if (totalCost > 0) String.format(Locale.getDefault(), " (%.0f ₽)", totalCost) else ""
+                            appendLine("${index + 1}. ${part.name} - ${part.quantity} шт.$costStr")
                         }
                     }
                     
@@ -858,6 +908,70 @@ class OrderDetailsFragment : Fragment() {
         }
         
         dialog.show()
+    }
+    
+    private fun showPriceSelectionDialog(type: String, onSelect: (com.example.bestapp.api.models.ApiPrice) -> Unit) {
+        val deviceType = currentOrder?.deviceType ?: currentApiOrder?.deviceType
+        val category = deviceType?.lowercase() ?: ""
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            val pricesResult = if (type == "service") {
+                apiRepository.getServices(category.takeIf { it.isNotBlank() })
+            } else {
+                apiRepository.getParts(category.takeIf { it.isNotBlank() })
+            }
+            
+            pricesResult.onSuccess { prices ->
+                if (prices.isEmpty()) {
+                    Toast.makeText(context, "Прайс-лист пуст", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
+                val dialogView = layoutInflater.inflate(R.layout.dialog_select_price, null)
+                val recyclerPriceItems = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_price_items)
+                val inputSearch = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.input_search)
+                
+                val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(if (type == "service") "Выбрать работу" else "Выбрать запчасть")
+                    .setView(dialogView)
+                    .setNegativeButton("Отмена", null)
+                    .create()
+                
+                var priceList = prices.toList()
+                
+                val adapter = PriceItemAdapter(onItemClick = { priceItem ->
+                    onSelect(priceItem)
+                    dialog.dismiss()
+                })
+                adapter.updatePrices(priceList)
+                
+                recyclerPriceItems.layoutManager = LinearLayoutManager(requireContext())
+                recyclerPriceItems.adapter = adapter
+                
+                // Поиск
+                inputSearch.addTextChangedListener(object : TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: Editable?) {
+                        val query = s?.toString()?.lowercase() ?: ""
+                        val filtered = if (query.isBlank()) {
+                            priceList
+                        } else {
+                            priceList.filter { 
+                                it.name.lowercase().contains(query) || 
+                                it.description?.lowercase()?.contains(query) == true ||
+                                it.category.lowercase().contains(query)
+                            }
+                        }
+                        adapter.updatePrices(filtered)
+                    }
+                })
+                
+                dialog.show()
+            }.onFailure { error ->
+                Toast.makeText(context, "Ошибка загрузки прайса: ${error.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
     private fun completeOrder(finalCost: Double, repairDescription: String?) {

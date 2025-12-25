@@ -3,15 +3,24 @@ package com.example.bestapp.ui.orders
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bestapp.R
+import com.example.bestapp.api.models.ApiPrice
 import com.google.android.material.textfield.TextInputEditText
+import java.util.Locale
 
 data class WorkEntry(
     var description: String = "",
     var priceItemId: Long? = null, // ID из прайса (если выбрано из прайса)
     var price: Double? = null // Цена из прайса
-)
+) {
+    constructor(priceItem: ApiPrice) : this(
+        description = priceItem.name,
+        priceItemId = priceItem.id,
+        price = priceItem.price
+    )
+}
 
 class WorkEntryAdapter : RecyclerView.Adapter<WorkEntryAdapter.WorkViewHolder>() {
     
@@ -32,8 +41,13 @@ class WorkEntryAdapter : RecyclerView.Adapter<WorkEntryAdapter.WorkViewHolder>()
         }
     }
 
-    fun getWorks(): List<String> {
-        return works.map { it.description.trim() }.filter { it.isNotBlank() }
+    fun getWorks(): List<WorkEntry> {
+        return works.filter { it.description.trim().isNotBlank() }
+    }
+    
+    fun addWorkFromPrice(priceItem: ApiPrice) {
+        works.add(WorkEntry(priceItem))
+        notifyItemInserted(works.size - 1)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WorkViewHolder {
@@ -49,16 +63,16 @@ class WorkEntryAdapter : RecyclerView.Adapter<WorkEntryAdapter.WorkViewHolder>()
     override fun getItemCount(): Int = works.size
 
     inner class WorkViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val inputDescription: TextInputEditText = itemView.findViewById(R.id.input_work_description)
+        private val textWorkName: TextView = itemView.findViewById(R.id.text_work_name)
+        private val textWorkPrice: TextView = itemView.findViewById(R.id.text_work_price)
         private val btnRemove = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_remove_work)
 
         fun bind(work: WorkEntry, position: Int) {
-            inputDescription.setText(work.description)
-            
-            inputDescription.setOnFocusChangeListener { _, hasFocus ->
-                if (!hasFocus) {
-                    work.description = inputDescription.text?.toString() ?: ""
-                }
+            textWorkName.text = work.description
+            textWorkPrice.text = if (work.price != null) {
+                String.format(Locale.getDefault(), "%.0f ₽", work.price)
+            } else {
+                ""
             }
             
             btnRemove.setOnClickListener {

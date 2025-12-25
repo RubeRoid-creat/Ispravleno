@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.bestapp.R
+import com.example.bestapp.api.models.ApiPrice
 import com.google.android.material.textfield.TextInputEditText
 
 data class PartEntry(
@@ -12,7 +13,14 @@ data class PartEntry(
     var quantity: Int = 1,
     var cost: Double = 0.0,
     var priceItemId: Long? = null // ID из прайса (если выбрано из прайса)
-)
+) {
+    constructor(priceItem: ApiPrice, quantity: Int = 1) : this(
+        name = priceItem.name,
+        quantity = quantity,
+        cost = priceItem.price,
+        priceItemId = priceItem.id
+    )
+}
 
 class PartEntryAdapter : RecyclerView.Adapter<PartEntryAdapter.PartViewHolder>() {
     
@@ -35,6 +43,11 @@ class PartEntryAdapter : RecyclerView.Adapter<PartEntryAdapter.PartViewHolder>()
 
     fun getParts(): List<PartEntry> {
         return parts.filter { it.name.trim().isNotBlank() }
+    }
+    
+    fun addPartFromPrice(priceItem: ApiPrice, quantity: Int = 1) {
+        parts.add(PartEntry(priceItem, quantity))
+        notifyItemInserted(parts.size - 1)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PartViewHolder {
