@@ -538,67 +538,6 @@ data class CompleteOrderRequest(
     @SerializedName("repair_description") val repairDescription: String? = null
 )
 
-// ============= Subscription Models =============
-
-data class ApiSubscription(
-    val id: Long,
-    @SerializedName("master_id") val masterId: Long,
-    @SerializedName("subscription_type") val subscriptionType: String, // "basic" или "premium"
-    val status: String, // "active", "cancelled", "expired"
-    @SerializedName("started_at") val startedAt: String,
-    @SerializedName("expires_at") val expiresAt: String?,
-    @SerializedName("auto_renew") val autoRenew: Boolean,
-    @SerializedName("created_at") val createdAt: String
-)
-
-data class ApiSubscriptionType(
-    val name: String,
-    val price: Double,
-    val commission: Double,
-    val features: List<String>
-)
-
-data class ApiSubscriptionInfo(
-    @SerializedName("current_type") val currentType: String,
-    @SerializedName("current_subscription") val currentSubscription: ApiSubscription?,
-    @SerializedName("subscription_data") val subscriptionData: ApiSubscriptionType?,
-    @SerializedName("all_types") val allTypes: Map<String, ApiSubscriptionType>?
-)
-
-data class ActivateSubscriptionRequest(
-    @SerializedName("subscription_type") val subscriptionType: String // "basic" или "premium"
-)
-
-// ============= Promotion Models =============
-
-data class ApiPromotion(
-    val id: Long,
-    @SerializedName("master_id") val masterId: Long,
-    @SerializedName("promotion_type") val promotionType: String, // "top_listing", "highlighted_profile", "featured"
-    val status: String, // "active", "cancelled", "expired"
-    @SerializedName("started_at") val startedAt: String,
-    @SerializedName("expires_at") val expiresAt: String,
-    @SerializedName("created_at") val createdAt: String
-)
-
-data class ApiPromotionType(
-    val name: String,
-    val description: String,
-    val price: Double,
-    val duration: Int // дней
-)
-
-data class ApiPromotionInfo(
-    @SerializedName("active_promotions") val activePromotions: List<ApiPromotion>?,
-    @SerializedName("available_types") val availableTypes: Map<String, ApiPromotionType>?,
-    @SerializedName("has_top_listing") val hasTopListing: Boolean?,
-    @SerializedName("has_highlighted") val hasHighlighted: Boolean?,
-    @SerializedName("has_featured") val hasFeatured: Boolean?
-)
-
-data class PurchasePromotionRequest(
-    @SerializedName("promotion_type") val promotionType: String
-)
 
 // ============= Verification Models =============
 

@@ -22,8 +22,6 @@ import verificationRoutes from './routes/verification.js';
 import complaintsRoutes from './routes/complaints.js';
 import adminRoutes from './routes/admin.js';
 import paymentsRoutes from './routes/payments.js';
-import subscriptionsRoutes from './routes/subscriptions.js';
-import promotionsRoutes from './routes/promotions.js';
 import loyaltyRoutes from './routes/loyalty.js';
 import routeOptimizationRoutes from './routes/route-optimization.js';
 import mlmRoutes from './routes/mlm.js';
@@ -72,7 +70,7 @@ app.get('/admin/*', (req, res) => {
 // Логирование запросов
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
-  if (req.path.includes('wallet') || req.path.includes('subscriptions') || req.path.includes('promotions') || req.path.includes('reorder')) {
+  if (req.path.includes('wallet') || req.path.includes('reorder')) {
     console.log(`[API DEBUG] Request: ${req.method} ${req.path}`);
     console.log(`[API DEBUG] Headers:`, JSON.stringify(req.headers, null, 2));
   }
@@ -365,8 +363,6 @@ app.get('/', (req, res) => {
       complaints: '/api/complaints',
       admin: '/api/admin',
       payments: '/api/payments',
-      subscriptions: '/api/subscriptions',
-      promotions: '/api/promotions',
       loyalty: '/api/loyalty',
       mlm: '/api/mlm',
       version: '/api/version',
@@ -402,8 +398,6 @@ app.use('/api/verification', verificationMasterRateLimiter(), verificationRoutes
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentsRoutes);
-app.use('/api/subscriptions', subscriptionsRoutes);
-app.use('/api/promotions', promotionsRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/route-optimization', routeOptimizationRoutes);
 app.use('/api/mlm', statsRateLimiter(), mlmRoutes); // 200 запросов за 15 минут для MLM статистики

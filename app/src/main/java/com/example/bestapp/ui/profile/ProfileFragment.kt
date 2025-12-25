@@ -142,16 +142,6 @@ class ProfileFragment : Fragment() {
         btnStatistics?.setOnClickListener {
             findNavController().navigate(R.id.action_profile_to_statistics)
         }
-        
-        val btnSubscriptions = view.findViewById<MaterialButton>(R.id.btn_subscriptions)
-        btnSubscriptions?.setOnClickListener {
-            findNavController().navigate(R.id.action_profile_to_subscription)
-        }
-        
-        val btnPromotions = view.findViewById<MaterialButton>(R.id.btn_promotions)
-        btnPromotions?.setOnClickListener {
-            findNavController().navigate(R.id.action_profile_to_promotion)
-        }
     }
     
     override fun onResume() {

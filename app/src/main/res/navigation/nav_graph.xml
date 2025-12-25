@@ -217,12 +217,6 @@
             android:id="@+id/action_profile_to_reports"
             app:destination="@id/reportsListFragment" />
         <action
-            android:id="@+id/action_profile_to_subscription"
-            app:destination="@id/subscriptionFragment" />
-        <action
-            android:id="@+id/action_profile_to_promotion"
-            app:destination="@id/promotionFragment" />
-        <action
             android:id="@+id/action_profile_to_mlm"
             app:destination="@id/mlmFragment" />
         <action
@@ -271,18 +265,6 @@
         android:name="com.example.bestapp.ui.reports.ReportsListFragment"
         android:label="Мои отчеты"
         tools:layout="@layout/fragment_reports_list" />
-
-    <fragment
-        android:id="@+id/subscriptionFragment"
-        android:name="com.example.bestapp.ui.subscription.SubscriptionFragment"
-        android:label="Подписки"
-        tools:layout="@layout/fragment_subscription" />
-
-    <fragment
-        android:id="@+id/promotionFragment"
-        android:name="com.example.bestapp.ui.promotion.PromotionFragment"
-        android:label="Продвижения"
-        tools:layout="@layout/fragment_promotion" />
 
     <fragment
         android:id="@+id/mlmFragment"

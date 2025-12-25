@@ -1,7 +1,6 @@
 import { query } from '../database/db.js';
 import { config } from '../config.js';
 import { broadcastToMaster, notifyMasterAssignment, notifyAssignmentExpired } from '../websocket.js';
-import { hasActivePromotion } from './promotion-service.js';
 
 // Хранилище таймеров для назначений
 const assignmentTimers = new Map();
@@ -21,7 +20,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c; // Расстояние в метрах
 }
 
-// Вычисление скоринга мастера для заказа (улучшенная версия с учетом подписок и продвижений)
+// Вычисление скоринга мастера для заказа
 function calculateMasterScore(master, orderLat, orderLon) {
   let score = 0;
   
@@ -52,86 +51,32 @@ function calculateMasterScore(master, orderLat, orderLon) {
     score += 0.125; // половина от 0.25
   }
   
-  // 4. Загрузка мастера (количество активных заказов) - вес 15%
+  // 4. Загрузка мастера (количество активных заказов) - вес 20%
   // Чем меньше активных заказов, тем выше score
   const activeOrders = master.active_orders_count || 0;
   const maxActiveOrders = 5; // Максимальное количество активных заказов
-  const loadScore = Math.max(0, 1 - (activeOrders / maxActiveOrders)) * 0.15;
+  const loadScore = Math.max(0, 1 - (activeOrders / maxActiveOrders)) * 0.20;
   score += loadScore;
   
-  // 5. Премиум подписка - бонус 10%
-  if (master.subscription_type === 'premium') {
-    score += 0.10;
-    master.hasPremium = true;
-  }
-  
-  // 6. Продвижения - бонусы
-  let promotionBonus = 0;
-  if (master.has_top_listing) {
-    promotionBonus += 0.05; // Топ в выдаче +5%
-  }
-  if (master.has_highlighted) {
-    promotionBonus += 0.03; // Выделенный профиль +3%
-  }
-  if (master.has_featured) {
-    promotionBonus += 0.07; // Рекомендуемый мастер +7%
-  }
-  score += Math.min(promotionBonus, 0.10); // Максимальный бонус от продвижений 10%
-  
-  // Нормализуем score к максимуму 1.0 (хотя может быть больше из-за бонусов)
-  return Math.min(score, 1.2); // Разрешаем до 1.2 для учета всех бонусов
+  // Нормализуем score к максимуму 1.0
+  return Math.min(score, 1.0);
 }
 
 // Находим подходящих мастеров для заказа с умным подбором
 export function findAvailableMasters(deviceType, orderLat = null, orderLon = null) {
   try {
-    // Получаем мастеров с информацией о загрузке, опыте, подписках и продвижениях
-    // Проверяем существование таблицы master_promotions
-    let hasPromotionsTable = false;
-    try {
-      query.all(`SELECT 1 FROM master_promotions LIMIT 1`);
-      hasPromotionsTable = true;
-    } catch (e) {
-      // Таблица не существует, работаем без продвижений
-      hasPromotionsTable = false;
-    }
-    
-    // Упрощенный запрос без необязательных колонок
-    let sql = `
+    // Получаем мастеров с информацией о загрузке и опыте
+    const sql = `
       SELECT 
         m.id, m.user_id, m.specialization, m.latitude, m.longitude, m.rating, m.completed_orders,
         u.name, u.phone,
         COUNT(DISTINCT CASE 
           WHEN o.repair_status IN ('new', 'in_progress', 'diagnostics', 'waiting_parts') 
           THEN o.id 
-        END) as active_orders_count`;
-    
-    if (hasPromotionsTable) {
-      sql += `,
-        MAX(CASE WHEN mp1.promotion_type = 'top_listing' AND mp1.status = 'active' AND mp1.expires_at > datetime('now') THEN 1 ELSE 0 END) as has_top_listing,
-        MAX(CASE WHEN mp2.promotion_type = 'highlighted_profile' AND mp2.status = 'active' AND mp2.expires_at > datetime('now') THEN 1 ELSE 0 END) as has_highlighted,
-        MAX(CASE WHEN mp3.promotion_type = 'featured' AND mp3.status = 'active' AND mp3.expires_at > datetime('now') THEN 1 ELSE 0 END) as has_featured`;
-    } else {
-      sql += `,
-        0 as has_top_listing,
-        0 as has_highlighted,
-        0 as has_featured`;
-    }
-    
-    sql += `,
-        NULL as subscription_type
+        END) as active_orders_count
       FROM masters m
       JOIN users u ON m.user_id = u.id
-      LEFT JOIN orders o ON o.assigned_master_id = m.id`;
-    
-    if (hasPromotionsTable) {
-      sql += `
-      LEFT JOIN master_promotions mp1 ON mp1.master_id = m.id AND mp1.promotion_type = 'top_listing'
-      LEFT JOIN master_promotions mp2 ON mp2.master_id = m.id AND mp2.promotion_type = 'highlighted_profile'
-      LEFT JOIN master_promotions mp3 ON mp3.master_id = m.id AND mp3.promotion_type = 'featured'`;
-    }
-    
-    sql += `
+      LEFT JOIN orders o ON o.assigned_master_id = m.id
       WHERE m.is_on_shift = 1 AND m.status = 'available'
       GROUP BY m.id, m.user_id, m.specialization, m.latitude, m.longitude, m.rating, m.completed_orders, u.name, u.phone`;
     
@@ -147,17 +92,9 @@ export function findAvailableMasters(deviceType, orderLat = null, orderLon = nul
     const scoredMasters = filteredMasters.map(master => {
       const score = calculateMasterScore(master, orderLat, orderLon);
       
-      // Формируем информацию о бонусах для логирования
-      const bonuses = [];
-      if (master.subscription_type === 'premium') bonuses.push('Premium');
-      if (master.has_top_listing) bonuses.push('Top');
-      if (master.has_highlighted) bonuses.push('Highlighted');
-      if (master.has_featured) bonuses.push('Featured');
-      
       return {
         ...master,
-        score: score,
-        bonuses: bonuses.join(', ') || 'None'
+        score: score
       };
     });
     
@@ -167,7 +104,7 @@ export function findAvailableMasters(deviceType, orderLat = null, orderLon = nul
     console.log(`📊 Найдено ${scoredMasters.length} подходящих мастеров для ${deviceType}`);
     if (scoredMasters.length > 0) {
       console.log(`🏆 Топ-3 мастера:`, scoredMasters.slice(0, 3).map(m => 
-        `#${m.id} (score: ${m.score.toFixed(3)}, rating: ${m.rating}, completed: ${m.completed_orders || 0}, distance: ${m.distance || 'N/A'}м, active: ${m.active_orders_count}, bonuses: [${m.bonuses}])`
+        `#${m.id} (score: ${m.score.toFixed(3)}, rating: ${m.rating}, completed: ${m.completed_orders || 0}, distance: ${m.distance || 'N/A'}м, active: ${m.active_orders_count})`
       ));
     }
     

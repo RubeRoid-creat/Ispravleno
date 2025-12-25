@@ -213,31 +213,6 @@ interface ApiService {
         @Path("orderId") orderId: Long,
         @Part image: okhttp3.MultipartBody.Part
     ): Response<ApiChatMessage>
-    
-    // ============= Подписки =============
-    
-    @GET("api/subscriptions/my")
-    suspend fun getMySubscription(): Response<com.example.bestapp.api.models.ApiSubscriptionInfo>
-    
-    @POST("api/subscriptions/activate")
-    suspend fun activateSubscription(@Body request: com.example.bestapp.api.models.ActivateSubscriptionRequest): Response<com.example.bestapp.api.models.MessageResponse>
-    
-    @POST("api/subscriptions/cancel")
-    suspend fun cancelSubscription(): Response<com.example.bestapp.api.models.MessageResponse>
-    
-    // ============= Продвижения =============
-    
-    @GET("api/promotions/my")
-    suspend fun getMyPromotions(): Response<com.example.bestapp.api.models.ApiPromotionInfo>
-    
-    @GET("api/promotions/types")
-    suspend fun getPromotionTypes(): Response<Map<String, com.example.bestapp.api.models.ApiPromotionType>>
-    
-    @POST("api/promotions/purchase")
-    suspend fun purchasePromotion(@Body request: com.example.bestapp.api.models.PurchasePromotionRequest): Response<com.example.bestapp.api.models.MessageResponse>
-    
-    @POST("api/promotions/{id}/cancel")
-    suspend fun cancelPromotion(@Path("id") id: Long): Response<com.example.bestapp.api.models.MessageResponse>
 
     // ============= Версионирование приложения =============
 
