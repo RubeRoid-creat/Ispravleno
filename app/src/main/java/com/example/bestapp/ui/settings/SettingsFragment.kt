@@ -13,7 +13,6 @@ import com.example.bestapp.R
 import com.example.bestapp.api.ApiRepository
 import com.example.bestapp.auth.AuthManager
 import com.example.bestapp.data.PreferencesManager
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
@@ -43,11 +42,6 @@ class SettingsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        val toolbar = view.findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
         
         inputName = view.findViewById(R.id.input_name)
         inputPhone = view.findViewById(R.id.input_phone)

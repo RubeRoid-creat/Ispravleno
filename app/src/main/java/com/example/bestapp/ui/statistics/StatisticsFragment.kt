@@ -18,7 +18,6 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.flow.collectLatest
@@ -29,7 +28,6 @@ import java.util.Locale
 class StatisticsFragment : Fragment() {
     private val viewModel: StatisticsViewModel by viewModels()
     
-    private var toolbar: MaterialToolbar? = null
     private var progressBar: ProgressBar? = null
     private var errorText: TextView? = null
     private var totalOrdersText: TextView? = null
@@ -52,13 +50,11 @@ class StatisticsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         initViews(view)
-        setupToolbar()
         setupPeriodFilter()
         observeUiState()
     }
     
     private fun initViews(view: View) {
-        toolbar = view.findViewById(R.id.toolbar)
         progressBar = view.findViewById(R.id.progress_loading)
         errorText = view.findViewById(R.id.text_error)
         totalOrdersText = view.findViewById(R.id.text_total_orders)
@@ -68,12 +64,6 @@ class StatisticsFragment : Fragment() {
         chartOrders = view.findViewById(R.id.chart_orders)
         
         setupCharts()
-    }
-    
-    private fun setupToolbar() {
-        toolbar?.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
     }
     
     private fun setupPeriodFilter() {

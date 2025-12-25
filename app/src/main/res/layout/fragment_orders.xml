@@ -6,49 +6,39 @@
     android:layout_height="match_parent"
     tools:context=".ui.orders.OrdersFragment">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Вкладки: Новые заказы / Завершенные заказы -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tab_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="@string/orders_title"
-            app:titleTextColor="?attr/colorOnSurface">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_show_map"
-                style="@style/Widget.Material3.Button.TextButton.Icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginEnd="8dp"
-                android:text="Карта"
-                app:icon="@drawable/ic_map"
-                app:iconGravity="textStart"
-                app:iconTint="?attr/colorPrimary" />
-
-        </com.google.android.material.appbar.MaterialToolbar>
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:tabMode="fixed"
+        app:tabGravity="fill">
         
-        <!-- Вкладки: Новые заказы / Завершенные заказы -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tab_layout"
-            android:layout_width="match_parent"
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:tabMode="fixed"
-            app:tabGravity="fill">
-            
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Новые заказы" />
-            
-            <com.google.android.material.tabs.TabItem
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Мои заказы" />
-        </com.google.android.material.tabs.TabLayout>
+            android:text="Новые заказы" />
+        
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Мои заказы" />
+    </com.google.android.material.tabs.TabLayout>
+    
+    <!-- Кнопка "Карта" -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_show_map"
+        style="@style/Widget.Material3.Button.TextButton.Icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|top"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:text="Карта"
+        app:icon="@drawable/ic_map"
+        app:iconGravity="textStart"
+        app:iconTint="?attr/colorPrimary" />
         
         <!-- Кнопки для батчинга заказов -->
         <LinearLayout
@@ -114,14 +104,11 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-
-    </com.google.android.material.appbar.AppBarLayout>
-
     <!-- Контейнер для кнопки "На смену" и списка заказов -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:layout_marginTop="60dp">
 
         <LinearLayout
             android:layout_width="match_parent"
