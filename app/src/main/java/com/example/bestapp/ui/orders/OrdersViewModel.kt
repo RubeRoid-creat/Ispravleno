@@ -43,6 +43,9 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
     private val _myOrders = MutableStateFlow<List<Order>>(emptyList())
     val myOrders: StateFlow<List<Order>> = _myOrders.asStateFlow()
     
+    private val _completedOrders = MutableStateFlow<List<Order>>(emptyList())
+    val completedOrders: StateFlow<List<Order>> = _completedOrders.asStateFlow()
+    
     private val _rejectedOrders = MutableStateFlow<List<com.example.bestapp.api.models.ApiRejectedAssignment>>(emptyList())
     val rejectedOrders: StateFlow<List<com.example.bestapp.api.models.ApiRejectedAssignment>> = _rejectedOrders.asStateFlow()
     
@@ -868,7 +871,7 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
             )
             
             result.onSuccess { apiOrders ->
-                Log.d(TAG, "Loaded ${apiOrders.size} my orders from API")
+                Log.d(TAG, "Loaded ${apiOrders.size} my orders (in_progress) from API")
                 
                 // Конвертируем ApiOrder в Order
                 val convertedOrders = apiOrders.map { it.toOrder() }
@@ -876,6 +879,36 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
             }.onFailure { error ->
                 Log.e(TAG, "Failed to load my orders from API: ${error.message}", error)
                 _myOrders.value = emptyList()
+            }
+        }
+    }
+    
+    fun loadCompletedOrders() {
+        viewModelScope.launch {
+            Log.d(TAG, "Loading completed orders...")
+            
+            val result = apiRepository.getOrders(
+                status = "completed",
+                deviceType = null,
+                orderType = null,
+                urgency = null,
+                maxDistance = null,
+                minPrice = null,
+                maxPrice = null,
+                sortBy = "completed_at",
+                masterLatitude = null,
+                masterLongitude = null
+            )
+            
+            result.onSuccess { apiOrders ->
+                Log.d(TAG, "Loaded ${apiOrders.size} completed orders from API")
+                
+                // Конвертируем ApiOrder в Order
+                val convertedOrders = apiOrders.map { it.toOrder() }
+                _completedOrders.value = convertedOrders
+            }.onFailure { error ->
+                Log.e(TAG, "Failed to load completed orders from API: ${error.message}", error)
+                _completedOrders.value = emptyList()
             }
         }
     }

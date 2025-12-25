@@ -21,6 +21,7 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.Tasks
@@ -89,8 +90,10 @@ class OrdersFragment : Fragment() {
         observeCompletedOrders()
         observeVerificationStatus()
         
-        // Инициализируем карточку смены с текущим статусом
-        updateShiftCard(viewModel.isShiftActive.value)
+        // Инициализируем карточку смены с текущим статусом (только для первой вкладки)
+        if (tabLayout?.selectedTabPosition == 0) {
+            updateShiftCard(viewModel.isShiftActive.value)
+        }
         
         // Всегда загружаем заявки при открытии экрана
         android.util.Log.d("OrdersFragment", "onViewCreated: refreshing orders...")
@@ -733,11 +736,20 @@ class OrdersFragment : Fragment() {
     }
     
     private fun updateOrdersVisibility() {
+        val currentTab = tabLayout?.selectedTabPosition ?: 0
+        
+        // Для вкладки "Мои заказы" (tab 1) всегда показываем заказы
+        if (currentTab == 1) {
+            // Заказы уже обрабатываются в observeCompletedOrders()
+            return
+        }
+        
+        // Для вкладки "Новые заказы" (tab 0) проверяем смену
         val isShiftActive = viewModel.isShiftActive.value
         val orders = viewModel.filteredOrders.value
         val isNotVerified = viewModel.isVerified.value == false
         
-        android.util.Log.d("OrdersFragment", "updateOrdersVisibility: isShiftActive=$isShiftActive, ordersCount=${orders.size}, isNotVerified=$isNotVerified")
+        android.util.Log.d("OrdersFragment", "updateOrdersVisibility: tab=$currentTab, isShiftActive=$isShiftActive, ordersCount=${orders.size}, isNotVerified=$isNotVerified")
         
         // Если мастер не верифицирован, показываем сообщение о верификации
         if (isNotVerified) {
@@ -809,12 +821,15 @@ class OrdersFragment : Fragment() {
                         // Новые заказы
                         recyclerView?.visibility = View.VISIBLE
                         recyclerCompletedOrders?.visibility = View.GONE
+                        shiftCard?.visibility = View.VISIBLE // Показываем карточку смены
                     }
                     1 -> {
                         // Мои заказы
                         recyclerView?.visibility = View.GONE
                         recyclerCompletedOrders?.visibility = View.VISIBLE
-                        viewModel.loadMyOrders()
+                        shiftCard?.visibility = View.GONE // Скрываем карточку смены
+                        viewModel.loadMyOrders() // Загружаем заказы в работе
+                        viewModel.loadCompletedOrders() // Загружаем завершенные заказы
                     }
                 }
             }
@@ -826,9 +841,22 @@ class OrdersFragment : Fragment() {
     
     private fun observeCompletedOrders() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.myOrders.collectLatest { orders ->
-                android.util.Log.d("OrdersFragment", "My orders updated: ${orders.size} orders")
-                completedOrdersAdapter.submitList(orders)
+            // Объединяем заказы в работе и завершенные
+            kotlinx.coroutines.flow.combine(
+                viewModel.myOrders,
+                viewModel.completedOrders
+            ) { inProgress, completed ->
+                // Сначала показываем заказы в работе, потом завершенные
+                inProgress + completed
+            }.collectLatest { allOrders ->
+                android.util.Log.d("OrdersFragment", "My orders updated: ${allOrders.size} orders (in_progress + completed)")
+                completedOrdersAdapter.submitList(allOrders)
+                // Всегда показываем заказы во вкладке "Мои заказы", независимо от смены
+                if (tabLayout?.selectedTabPosition == 1) {
+                    recyclerCompletedOrders?.visibility = if (allOrders.isEmpty()) View.GONE else View.VISIBLE
+                    emptyTextView?.text = if (allOrders.isEmpty()) "Нет заказов" else ""
+                    emptyTextView?.visibility = if (allOrders.isEmpty()) View.VISIBLE else View.GONE
+                }
             }
         }
     }
