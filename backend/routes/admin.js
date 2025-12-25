@@ -211,9 +211,16 @@ router.get('/masters/list', (req, res) => {
             return false;
           }
           
-          const hasSpecialization = specializations.includes(device_type);
+          // Сравниваем без учета регистра и пробелов
+          const normalizedDeviceType = device_type.trim().toLowerCase();
+          const hasSpecialization = specializations.some(spec => 
+            spec && spec.toString().trim().toLowerCase() === normalizedDeviceType
+          );
+          
           if (!hasSpecialization) {
-            console.log(`[GET /api/admin/masters/list] Мастер #${master.id} (${master.name}): специализации [${specializations.join(', ')}] не содержат "${device_type}"`);
+            console.log(`[GET /api/admin/masters/list] Мастер #${master.id} (${master.name}): специализации [${specializations.join(', ')}] не содержат "${device_type}" (нормализовано: "${normalizedDeviceType}")`);
+          } else {
+            console.log(`[GET /api/admin/masters/list] ✅ Мастер #${master.id} (${master.name}) подходит: специализации [${specializations.join(', ')}] содержат "${device_type}"`);
           }
           
           return hasSpecialization;
