@@ -1086,7 +1086,7 @@ class OrderDetailsFragment : Fragment() {
      */
     private fun updateRouteButton(distance: Double?, estimatedTime: Int?) {
         btnBuildRoute?.let { button ->
-            val baseText = "📍 Построить маршрут"
+            val baseText = "Маршрут"
             if (distance != null && estimatedTime != null) {
                 val distanceText = formatDistance(distance)
                 val timeText = "$estimatedTime мин"
