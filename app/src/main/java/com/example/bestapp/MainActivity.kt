@@ -146,6 +146,7 @@ class MainActivity : AppCompatActivity() {
                         // Пытаемся использовать In-App Updates
                         val inAppUpdateSuccess = updateManager.checkInAppUpdate(
                             activity = this@MainActivity,
+                            updateLauncher = updateLauncher,
                             forceUpdate = data.forceUpdate
                         )
                         

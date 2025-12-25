@@ -225,9 +225,14 @@ class UpdateManager(
     /**
      * Проверить обновления через Google Play In-App Updates
      * @param activity Activity для запуска обновления
+     * @param updateLauncher ActivityResultLauncher для обработки результата
      * @param forceUpdate Если true - использует IMMEDIATE режим, иначе FLEXIBLE
      */
-    suspend fun checkInAppUpdate(activity: Activity, forceUpdate: Boolean = false): Boolean {
+    suspend fun checkInAppUpdate(
+        activity: Activity, 
+        updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>,
+        forceUpdate: Boolean = false
+    ): Boolean {
         return suspendCancellableCoroutine { continuation ->
             try {
                 appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
@@ -242,11 +247,11 @@ class UpdateManager(
                     if (isUpdateAvailable) {
                         if (forceUpdate && isImmediateUpdateAllowed) {
                             // Немедленное обновление (блокирующее)
-                            startImmediateUpdate(activity, appUpdateInfo)
+                            startImmediateUpdate(activity, appUpdateInfo, updateLauncher)
                             continuation.resume(true)
                         } else if (isFlexibleUpdateAllowed) {
                             // Гибкое обновление (в фоне)
-                            startFlexibleUpdate(activity, appUpdateInfo)
+                            startFlexibleUpdate(activity, appUpdateInfo, updateLauncher)
                             continuation.resume(true)
                         } else {
                             // Fallback на обычное обновление
@@ -270,15 +275,19 @@ class UpdateManager(
 
     /**
      * Запустить немедленное обновление (блокирующее)
+     * @param updateLauncher ActivityResultLauncher для обработки результата
      */
-    private fun startImmediateUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo) {
+    fun startImmediateUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo, updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>) {
         try {
-            appUpdateManager.startUpdateFlowForResult(
-                appUpdateInfo,
-                AppUpdateType.IMMEDIATE,
-                activity,
-                REQUEST_CODE_UPDATE
-            )
+            val intentSenderRequest = androidx.activity.result.IntentSenderRequest.Builder(
+                appUpdateInfo.getIntentSenderForResult(
+                    activity,
+                    AppUpdateType.IMMEDIATE,
+                    REQUEST_CODE_UPDATE
+                ) ?: throw Exception("IntentSender is null")
+            ).build()
+            
+            updateLauncher.launch(intentSenderRequest)
             Log.d(TAG, "🚀 Запущено немедленное обновление")
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка запуска немедленного обновления", e)
@@ -288,15 +297,19 @@ class UpdateManager(
 
     /**
      * Запустить гибкое обновление (в фоне)
+     * @param updateLauncher ActivityResultLauncher для обработки результата
      */
-    private fun startFlexibleUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo) {
+    fun startFlexibleUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo, updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>) {
         try {
-            appUpdateManager.startUpdateFlowForResult(
-                appUpdateInfo,
-                AppUpdateType.FLEXIBLE,
-                activity,
-                REQUEST_CODE_UPDATE
-            )
+            val intentSenderRequest = androidx.activity.result.IntentSenderRequest.Builder(
+                appUpdateInfo.getIntentSenderForResult(
+                    activity,
+                    AppUpdateType.FLEXIBLE,
+                    REQUEST_CODE_UPDATE
+                ) ?: throw Exception("IntentSender is null")
+            ).build()
+            
+            updateLauncher.launch(intentSenderRequest)
             Log.d(TAG, "🔄 Запущено гибкое обновление в фоне")
             
             // Слушаем прогресс обновления
