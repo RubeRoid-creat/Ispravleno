@@ -34,23 +34,25 @@
     <color name="stat_card_gradient_start">#424242</color>
     <color name="stat_card_gradient_end">#616161</color>
     
-    <color name="news_tips_bg">#E1F5FE</color>
-    <color name="news_tips_text">#0277BD</color>
-    <color name="news_industry_bg">#F3E5F5</color>
-    <color name="news_industry_text">#7B1FA2</color>
-    <color name="news_guides_bg">#E8F5E9</color>
-    <color name="news_guides_text">#388E3C</color>
-    <color name="news_tools_bg">#FFF3E0</color>
-    <color name="news_tools_text">#F57C00</color>
-    <color name="news_trends_bg">#FFEBEE</color>
-    <color name="news_trends_text">#D32F2F</color>
+    <!-- News category colors - Монохромная схема с оттенками серого -->
+    <color name="news_tips_bg">#F5F5F5</color>
+    <color name="news_tips_text">#424242</color>
+    <color name="news_industry_bg">#EEEEEE</color>
+    <color name="news_industry_text">#212121</color>
+    <color name="news_guides_bg">#FAFAFA</color>
+    <color name="news_guides_text">#616161</color>
+    <color name="news_tools_bg">#F5F5F5</color>
+    <color name="news_tools_text">#424242</color>
+    <color name="news_trends_bg">#EEEEEE</color>
+    <color name="news_trends_text">#212121</color>
     
+    <!-- Order status colors - Монохромная схема -->
     <color name="order_urgent_bg">#FFEBEE</color>
     <color name="order_urgent_text">#D32F2F</color>
-    <color name="order_warranty_bg">#E8F5E9</color>
-    <color name="order_warranty_text">#388E3C</color>
-    <color name="order_repeat_bg">#FFF3E0</color>
-    <color name="order_repeat_text">#F57C00</color>
+    <color name="order_warranty_bg">#F5F5F5</color>
+    <color name="order_warranty_text">#424242</color>
+    <color name="order_repeat_bg">#EEEEEE</color>
+    <color name="order_repeat_text">#616161</color>
     
     <!-- Modern gradient colors - Монохромные градиенты -->
     <color name="gradient_start">#424242</color>
