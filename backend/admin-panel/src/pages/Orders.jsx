@@ -16,14 +16,11 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
+  Autocomplete,
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { ordersAPI, statsAPI } from '../api/api';
+import { ordersAPI, statsAPI, mastersAPI } from '../api/api';
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -31,12 +28,13 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [assignDialog, setAssignDialog] = useState({ open: false, orderId: null });
-  const [selectedMaster, setSelectedMaster] = useState('');
+  const [selectedMaster, setSelectedMaster] = useState(null);
+  const [masterSearch, setMasterSearch] = useState('');
+  const [loadingMasters, setLoadingMasters] = useState(false);
   const [cancelDialog, setCancelDialog] = useState({ open: false, orderId: null, reason: '' });
 
   useEffect(() => {
     loadOrders();
-    loadMasters();
   }, []);
 
   const loadOrders = async () => {
@@ -50,25 +48,55 @@ export default function Orders() {
     }
   };
 
-  const loadMasters = async () => {
+  const loadMasters = async (search = '') => {
     try {
-      const response = await statsAPI.getStats();
-      // Здесь нужно будет добавить API для получения списка мастеров
-      // Пока используем заглушку
+      setLoadingMasters(true);
+      const response = await mastersAPI.getList({ 
+        search,
+        verified: 'true' // Показываем только верифицированных мастеров
+      });
+      setMasters(response.data);
     } catch (err) {
       console.error('Ошибка загрузки мастеров:', err);
+      setError(err.response?.data?.error || 'Ошибка загрузки мастеров');
+    } finally {
+      setLoadingMasters(false);
     }
   };
+  
+  useEffect(() => {
+    if (assignDialog.open) {
+      // Загружаем мастеров при открытии диалога
+      const timer = setTimeout(() => {
+        loadMasters(masterSearch);
+      }, 300); // Debounce для поиска
+      
+      return () => clearTimeout(timer);
+    }
+  }, [assignDialog.open, masterSearch]);
 
   const handleAssign = async () => {
+    if (!selectedMaster) {
+      setError('Выберите мастера');
+      return;
+    }
+    
     try {
-      await ordersAPI.assign(assignDialog.orderId, selectedMaster);
+      await ordersAPI.assign(assignDialog.orderId, selectedMaster.id);
       setAssignDialog({ open: false, orderId: null });
-      setSelectedMaster('');
+      setSelectedMaster(null);
+      setMasterSearch('');
       loadOrders();
     } catch (err) {
       setError(err.response?.data?.error || 'Ошибка назначения заказа');
     }
+  };
+  
+  const handleOpenAssignDialog = (orderId) => {
+    setAssignDialog({ open: true, orderId });
+    setSelectedMaster(null);
+    setMasterSearch('');
+    loadMasters();
   };
 
   const handleCancel = async () => {
@@ -148,7 +176,7 @@ export default function Orders() {
                     <>
                       <Button
                         size="small"
-                        onClick={() => setAssignDialog({ open: true, orderId: order.id })}
+                        onClick={() => handleOpenAssignDialog(order.id)}
                         sx={{ mr: 1 }}
                       >
                         Назначить
@@ -170,24 +198,80 @@ export default function Orders() {
       </TableContainer>
 
       {/* Диалог назначения */}
-      <Dialog open={assignDialog.open} onClose={() => setAssignDialog({ open: false, orderId: null })}>
+      <Dialog 
+        open={assignDialog.open} 
+        onClose={() => {
+          setAssignDialog({ open: false, orderId: null });
+          setSelectedMaster(null);
+          setMasterSearch('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Назначить заказ мастеру</DialogTitle>
         <DialogContent>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Мастер</InputLabel>
-            <Select
-              value={selectedMaster}
-              onChange={(e) => setSelectedMaster(e.target.value)}
-              label="Мастер"
-            >
-              <MenuItem value={1}>Мастер #1</MenuItem>
-              {/* Здесь нужно загрузить реальный список мастеров */}
-            </Select>
-          </FormControl>
+          <Autocomplete
+            sx={{ mt: 2 }}
+            options={masters}
+            getOptionLabel={(option) => `${option.name || 'Без имени'} (ID: ${option.id})`}
+            loading={loadingMasters}
+            value={selectedMaster}
+            onChange={(event, newValue) => {
+              setSelectedMaster(newValue);
+            }}
+            onInputChange={(event, newInputValue) => {
+              setMasterSearch(newInputValue);
+              loadMasters(newInputValue);
+            }}
+            inputValue={masterSearch}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Поиск мастера по имени"
+                placeholder="Введите имя или фамилию мастера"
+                InputProps={{
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {loadingMasters ? <CircularProgress color="inherit" size={20} /> : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
+            )}
+            renderOption={(props, option) => (
+              <Box component="li" {...props} key={option.id}>
+                <Box>
+                  <Typography variant="body1">
+                    {option.name || 'Без имени'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Email: {option.email} • Телефон: {option.phone}
+                    {option.rating > 0 && ` • Рейтинг: ${option.rating.toFixed(1)}`}
+                    {option.completed_orders > 0 && ` • Заказов: ${option.completed_orders}`}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            noOptionsText={loadingMasters ? "Загрузка..." : "Мастера не найдены"}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAssignDialog({ open: false, orderId: null })}>Отмена</Button>
-          <Button onClick={handleAssign} variant="contained" disabled={!selectedMaster}>
+          <Button 
+            onClick={() => {
+              setAssignDialog({ open: false, orderId: null });
+              setSelectedMaster(null);
+              setMasterSearch('');
+            }}
+          >
+            Отмена
+          </Button>
+          <Button 
+            onClick={handleAssign} 
+            variant="contained" 
+            disabled={!selectedMaster}
+          >
             Назначить
           </Button>
         </DialogActions>

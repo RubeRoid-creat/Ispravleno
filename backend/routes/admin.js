@@ -148,6 +148,56 @@ router.get('/stats/orders', (req, res) => {
 
 // ============= Управление заказами =============
 
+// Получить список мастеров для назначения
+router.get('/masters/list', (req, res) => {
+  try {
+    const { search, status, verified } = req.query;
+    
+    let sql = `
+      SELECT 
+        m.id,
+        m.user_id,
+        m.rating,
+        m.completed_orders,
+        m.status,
+        m.verification_status,
+        m.is_on_shift,
+        u.name,
+        u.email,
+        u.phone
+      FROM masters m
+      JOIN users u ON m.user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (status) {
+      sql += ' AND m.status = ?';
+      params.push(status);
+    }
+    
+    if (verified === 'true') {
+      sql += ' AND m.verification_status = ?';
+      params.push('verified');
+    }
+    
+    if (search) {
+      sql += ' AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)';
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+    
+    sql += ' ORDER BY u.name ASC';
+    
+    const masters = query.all(sql, params);
+    
+    res.json(masters);
+  } catch (error) {
+    console.error('Ошибка получения списка мастеров:', error);
+    res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+  }
+});
+
 // Ручное назначение заказа мастеру
 router.post('/orders/:orderId/assign', (req, res) => {
   try {

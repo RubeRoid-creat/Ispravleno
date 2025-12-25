@@ -84,6 +84,7 @@ export const usersAPI = {
 
 // Мастера
 export const mastersAPI = {
+  getList: (params) => api.get('/admin/masters/list', { params }),
   delete: (masterId) => api.delete(`/admin/masters/${masterId}`),
 };
 
