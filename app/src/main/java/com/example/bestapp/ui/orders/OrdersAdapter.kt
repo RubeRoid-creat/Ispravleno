@@ -14,6 +14,7 @@ import com.example.bestapp.data.Order
 import com.example.bestapp.data.OrderRequestStatus
 import com.example.bestapp.data.OrderType
 import com.google.android.material.chip.Chip
+import java.util.Locale
 
 class OrdersAdapter(
     private val onOrderClick: (Order) -> Unit,
@@ -82,10 +83,13 @@ class OrdersAdapter(
         private val orderProblem: TextView = itemView.findViewById(R.id.order_problem)
         private val orderTimer: TextView = itemView.findViewById(R.id.order_timer)
         private val orderDate: TextView = itemView.findViewById(R.id.order_date)
+        private val orderDistance: TextView = itemView.findViewById(R.id.order_distance)
+        private val distanceContainer: View = itemView.findViewById(R.id.distance_container)
         private val orderCheckbox: androidx.appcompat.widget.AppCompatCheckBox = itemView.findViewById(R.id.order_checkbox)
         private val actionButtonsContainer: View = itemView.findViewById(R.id.action_buttons_container)
         private val btnAcceptOrder: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.btn_accept_order)
         private val btnRejectOrder: com.google.android.material.button.MaterialButton = itemView.findViewById(R.id.btn_reject_order)
+        private val statusIndicator: View = itemView.findViewById(R.id.status_indicator)
         
         private var currentTimer: com.example.bestapp.ui.common.CountdownTimerView? = null
         private var currentOrder: Order? = null
@@ -99,15 +103,18 @@ class OrdersAdapter(
             
             // Статус заявки
             requestStatusChip.text = order.requestStatus.displayName
-            val (statusBg, statusText) = when (order.requestStatus) {
-                OrderRequestStatus.WARRANTY -> Pair(R.color.order_warranty_bg, R.color.order_warranty_text)
-                OrderRequestStatus.REPEAT -> Pair(R.color.order_repeat_bg, R.color.order_repeat_text)
-                OrderRequestStatus.NEW -> Pair(R.color.md_theme_light_surfaceVariant, R.color.md_theme_light_onSurfaceVariant)
+            val (statusBg, statusText, indicatorColor) = when (order.requestStatus) {
+                OrderRequestStatus.WARRANTY -> Triple(R.color.order_warranty_bg, R.color.order_warranty_text, R.color.order_warranty_text)
+                OrderRequestStatus.REPEAT -> Triple(R.color.order_repeat_bg, R.color.order_repeat_text, R.color.order_repeat_text)
+                OrderRequestStatus.NEW -> Triple(R.color.md_theme_light_surfaceVariant, R.color.md_theme_light_onSurfaceVariant, R.color.md_theme_light_primary)
             }
             requestStatusChip.chipBackgroundColor = ColorStateList.valueOf(
                 ContextCompat.getColor(context, statusBg)
             )
             requestStatusChip.setTextColor(ContextCompat.getColor(context, statusText))
+            
+            // Цвет индикатора статуса
+            statusIndicator?.setBackgroundColor(ContextCompat.getColor(context, indicatorColor))
             
             // Тип заказа
             orderTypeChip.text = order.orderType.displayName
@@ -129,9 +136,9 @@ class OrdersAdapter(
             }
             
             orderDevice.text = order.getDeviceFullName()
-            orderClient.text = "👤 ${order.clientName}"
-            orderPhone.text = "📞 ${order.clientPhone}"
-            orderAddress.text = "📍 ${order.clientAddress}"
+            orderClient.text = order.clientName
+            orderPhone.text = order.clientPhone
+            orderAddress.text = order.clientAddress
             orderProblem.text = order.problemDescription
             
             // Останавливаем предыдущий таймер
@@ -166,6 +173,22 @@ class OrdersAdapter(
             }
             
             orderDate.text = order.getFormattedCreatedDate()
+            
+            // Отображение расстояния до заказа
+            if (order.distance != null && order.distance!! > 0) {
+                distanceContainer.visibility = View.VISIBLE
+                val distanceM = order.distance!!.toDouble()
+                val distanceKm = distanceM / 1000.0
+                if (distanceKm < 1.0) {
+                    // Если меньше километра, показываем в метрах
+                    orderDistance.text = "${distanceM.toInt()} м"
+                } else {
+                    // Иначе показываем в километрах с одним знаком после запятой
+                    orderDistance.text = String.format(Locale.getDefault(), "%.1f км", distanceKm)
+                }
+            } else {
+                distanceContainer.visibility = View.GONE
+            }
             
             // Показываем кнопки Принять/Отклонить только для pending заявок
             val isPendingAssignment = order.assignmentStatus == "pending" && order.assignmentId != null

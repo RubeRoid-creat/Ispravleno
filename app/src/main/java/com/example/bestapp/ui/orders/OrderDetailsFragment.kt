@@ -88,6 +88,7 @@ class OrderDetailsFragment : Fragment() {
     private var warrantyStatus: TextView? = null
     private var requestStatusChip: Chip? = null
     private var orderTypeChip: Chip? = null
+    private var statusIndicatorDetail: View? = null
     private var problemDescription: TextView? = null
     private var problemShortDescription: TextView? = null
     private var problemWhenStarted: TextView? = null
@@ -168,6 +169,7 @@ class OrderDetailsFragment : Fragment() {
         orderTimer = view.findViewById(R.id.order_timer)
         requestStatusChip = view.findViewById(R.id.request_status_chip)
         orderTypeChip = view.findViewById(R.id.order_type_chip)
+        statusIndicatorDetail = view.findViewById(R.id.status_indicator_detail)
         clientName = view.findViewById(R.id.client_name)
         clientPhone = view.findViewById(R.id.client_phone)
         clientEmail = view.findViewById(R.id.client_email)
@@ -451,6 +453,24 @@ class OrderDetailsFragment : Fragment() {
             requestStatusChip?.text = statusText
             orderTypeChip?.text = order.orderType.displayName
             
+            // Устанавливаем цвет индикатора статуса
+            val indicatorColorRes = when(apiOrder?.repairStatus ?: order.status.toString()) {
+                "new" -> R.color.md_theme_light_primary
+                "in_progress" -> R.color.md_theme_light_primary
+                "completed" -> android.R.color.holo_green_dark
+                "cancelled" -> android.R.color.holo_red_dark
+                else -> R.color.md_theme_light_primary
+            }
+            statusIndicatorDetail?.let { indicator ->
+                try {
+                    indicator.setBackgroundColor(
+                        ContextCompat.getColor(requireContext(), indicatorColorRes)
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Ошибка установки цвета индикатора", e)
+                }
+            }
+            
             // Приоритет
             apiOrder?.priority?.let { priority ->
                 priorityText?.text = "Приоритет: ${when(priority) {
@@ -475,7 +495,7 @@ class OrderDetailsFragment : Fragment() {
             } ?: run { clientEmail?.visibility = View.GONE }
             
             // Адрес
-            clientAddress?.text = "📍 ${order.clientAddress}"
+            clientAddress?.text = order.clientAddress
             
             // Детали адреса
             val addressParts = mutableListOf<String>()
@@ -1276,6 +1296,7 @@ class OrderDetailsFragment : Fragment() {
         warrantyStatus = null
         requestStatusChip = null
         orderTypeChip = null
+        statusIndicatorDetail = null
         problemDescription = null
         problemShortDescription = null
         problemWhenStarted = null
