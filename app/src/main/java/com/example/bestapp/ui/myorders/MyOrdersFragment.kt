@@ -71,7 +71,7 @@ class MyOrdersFragment : Fragment() {
                 val bundle = Bundle().apply {
                     putLong("orderId", order.id)
                 }
-                findNavController().navigate(R.id.action_my_orders_to_order_details, bundle)
+                findNavController().navigate(R.id.action_orders_to_order_details, bundle)
             },
             onOrderSelected = null // Для "Мои заказы" не нужен режим выбора
         )

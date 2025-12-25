@@ -40,8 +40,8 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
     private val _filteredOrders = MutableStateFlow<List<Order>>(emptyList())
     val filteredOrders: StateFlow<List<Order>> = _filteredOrders.asStateFlow()
     
-    private val _completedOrders = MutableStateFlow<List<Order>>(emptyList())
-    val completedOrders: StateFlow<List<Order>> = _completedOrders.asStateFlow()
+    private val _myOrders = MutableStateFlow<List<Order>>(emptyList())
+    val myOrders: StateFlow<List<Order>> = _myOrders.asStateFlow()
     
     private val _rejectedOrders = MutableStateFlow<List<com.example.bestapp.api.models.ApiRejectedAssignment>>(emptyList())
     val rejectedOrders: StateFlow<List<com.example.bestapp.api.models.ApiRejectedAssignment>> = _rejectedOrders.asStateFlow()
@@ -171,7 +171,7 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
                     Log.d(TAG, "📝 WebSocket: Обновление статуса заказа #${it.orderId}: ${it.newStatus}")
                     // Обновляем список заказов
                     loadNewOrders()
-                    loadCompletedOrders()
+                    loadMyOrders()
                     webSocketManager.clearOrderStatusUpdate()
                 }
             }
@@ -850,12 +850,12 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
         loadNewOrders()
     }
     
-    fun loadCompletedOrders() {
+    fun loadMyOrders() {
         viewModelScope.launch {
-            Log.d(TAG, "Loading completed orders...")
+            Log.d(TAG, "Loading my orders (in_progress)...")
             
             val result = apiRepository.getOrders(
-                status = "completed",
+                status = "in_progress",
                 deviceType = null,
                 orderType = null,
                 urgency = null,
@@ -868,14 +868,14 @@ class OrdersViewModel(application: Application) : AndroidViewModel(application) 
             )
             
             result.onSuccess { apiOrders ->
-                Log.d(TAG, "Loaded ${apiOrders.size} completed orders from API")
+                Log.d(TAG, "Loaded ${apiOrders.size} my orders from API")
                 
                 // Конвертируем ApiOrder в Order
                 val convertedOrders = apiOrders.map { it.toOrder() }
-                _completedOrders.value = convertedOrders
+                _myOrders.value = convertedOrders
             }.onFailure { error ->
-                Log.e(TAG, "Failed to load completed orders from API: ${error.message}", error)
-                _completedOrders.value = emptyList()
+                Log.e(TAG, "Failed to load my orders from API: ${error.message}", error)
+                _myOrders.value = emptyList()
             }
         }
     }

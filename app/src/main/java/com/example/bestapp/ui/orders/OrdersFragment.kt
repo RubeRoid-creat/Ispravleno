@@ -811,10 +811,10 @@ class OrdersFragment : Fragment() {
                         recyclerCompletedOrders?.visibility = View.GONE
                     }
                     1 -> {
-                        // Завершенные заказы
+                        // Мои заказы
                         recyclerView?.visibility = View.GONE
                         recyclerCompletedOrders?.visibility = View.VISIBLE
-                        viewModel.loadCompletedOrders()
+                        viewModel.loadMyOrders()
                     }
                 }
             }
@@ -826,8 +826,8 @@ class OrdersFragment : Fragment() {
     
     private fun observeCompletedOrders() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.completedOrders.collectLatest { orders ->
-                android.util.Log.d("OrdersFragment", "Completed orders updated: ${orders.size} orders")
+            viewModel.myOrders.collectLatest { orders ->
+                android.util.Log.d("OrdersFragment", "My orders updated: ${orders.size} orders")
                 completedOrdersAdapter.submitList(orders)
             }
         }
