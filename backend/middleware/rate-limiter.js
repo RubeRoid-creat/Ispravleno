@@ -46,6 +46,21 @@ function cleanupOldRecords() {
       console.log(`🔓 IP ${ip} разблокирован`);
     }
   }
+  
+  // Очистка счетчиков статистики
+  for (const [ip, data] of statsRequestCounts.entries()) {
+    if (now - data.resetTime > 15 * 60 * 1000) {
+      statsRequestCounts.delete(ip);
+    }
+  }
+  
+  // Очистка заблокированных IP для статистики
+  for (const [ip, blockTime] of statsBlockedIPs.entries()) {
+    if (now - blockTime > 5 * 60 * 1000) {
+      statsBlockedIPs.delete(ip);
+      console.log(`🔓 [STATS] IP ${ip} разблокирован для статистики`);
+    }
+  }
 }
 
 // Периодическая очистка каждые 5 минут
@@ -61,6 +76,15 @@ export function rateLimiter(options = {}) {
     // Если rate limiting отключен
     if (!config.enabled) {
       return next();
+    }
+    
+    // Исключаем эндпоинты статистики из общего rate limiting
+    // Они используют свой statsRateLimiter с более высоким лимитом
+    const path = req.path || req.url;
+    if (path.includes('/api/masters/stats/me') || 
+        path.includes('/api/mlm/statistics') ||
+        path.includes('/api/mlm/structure')) {
+      return next(); // Пропускаем общий rate limiter для статистики
     }
     
     const ip = getClientIP(req);
@@ -149,15 +173,87 @@ export function verificationRateLimiter() {
   });
 }
 
+// Отдельные счетчики для статистики (чтобы не конфликтовать с общим rate limiter)
+const statsRequestCounts = new Map();
+const statsBlockedIPs = new Map();
+
 /**
  * Rate Limiter для статистики (более мягкий, так как запрашивается часто)
+ * Использует отдельные счетчики, чтобы не конфликтовать с общим rate limiter
  */
 export function statsRateLimiter() {
-  return rateLimiter({
-    maxRequests: 200, // 200 запросов
-    windowMs: 15 * 60 * 1000, // За 15 минут
-    blockDuration: 10 * 60 * 1000 // Блокировка на 10 минут (меньше, чем для других)
-  });
+  return (req, res, next) => {
+    const config = {
+      maxRequests: 500, // 500 запросов (увеличено с 200)
+      windowMs: 15 * 60 * 1000, // За 15 минут
+      blockDuration: 5 * 60 * 1000, // Блокировка на 5 минут (уменьшено)
+      enabled: true
+    };
+    
+    if (!config.enabled) {
+      return next();
+    }
+    
+    const ip = getClientIP(req);
+    const now = Date.now();
+    
+    // Проверка блокировки IP в статистике
+    if (statsBlockedIPs.has(ip)) {
+      const blockTime = statsBlockedIPs.get(ip);
+      const remainingTime = Math.ceil((config.blockDuration - (now - blockTime)) / 1000 / 60);
+      
+      console.warn(`🚫 [STATS] Заблокированный IP пытается получить статистику: ${ip}`);
+      
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: `Слишком много запросов статистики. Попробуйте через ${remainingTime} минут.`,
+        retryAfter: remainingTime * 60
+      });
+    }
+    
+    // Получение или создание записи для IP
+    let record = statsRequestCounts.get(ip);
+    
+    if (!record || now - record.resetTime > config.windowMs) {
+      record = {
+        count: 0,
+        resetTime: now
+      };
+      statsRequestCounts.set(ip, record);
+    }
+    
+    // Увеличение счетчика
+    record.count++;
+    
+    // Проверка лимита
+    if (record.count > config.maxRequests) {
+      statsBlockedIPs.set(ip, now);
+      statsRequestCounts.delete(ip);
+      
+      console.error(`⛔ [STATS] IP заблокирован за превышение лимита статистики: ${ip} (${record.count} запросов)`);
+      
+      return res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'Превышен лимит запросов статистики. Ваш IP временно заблокирован.',
+        retryAfter: config.blockDuration / 1000
+      });
+    }
+    
+    // Установка заголовков
+    const remaining = config.maxRequests - record.count;
+    const resetTime = Math.ceil((record.resetTime + config.windowMs) / 1000);
+    
+    res.setHeader('X-RateLimit-Limit', config.maxRequests);
+    res.setHeader('X-RateLimit-Remaining', remaining);
+    res.setHeader('X-RateLimit-Reset', resetTime);
+    
+    // Предупреждение при приближении к лимиту
+    if (remaining <= 50) {
+      console.warn(`⚠️ [STATS] IP ${ip} приближается к лимиту статистики: осталось ${remaining} запросов`);
+    }
+    
+    next();
+  };
 }
 
 /**
@@ -184,13 +280,20 @@ export function getRateLimitStats() {
  * Разблокировка IP адреса
  */
 export function unblockIP(ip) {
+  let unblocked = false;
   if (blockedIPs.has(ip)) {
     blockedIPs.delete(ip);
     requestCounts.delete(ip);
     console.log(`🔓 IP ${ip} разблокирован вручную`);
-    return true;
+    unblocked = true;
   }
-  return false;
+  if (statsBlockedIPs.has(ip)) {
+    statsBlockedIPs.delete(ip);
+    statsRequestCounts.delete(ip);
+    console.log(`🔓 [STATS] IP ${ip} разблокирован для статистики вручную`);
+    unblocked = true;
+  }
+  return unblocked;
 }
 
 /**
@@ -198,7 +301,8 @@ export function unblockIP(ip) {
  */
 export function resetIPCounter(ip) {
   requestCounts.delete(ip);
-  console.log(`🔄 Счетчик запросов для IP ${ip} сброшен`);
+  statsRequestCounts.delete(ip);
+  console.log(`🔄 Счетчики запросов для IP ${ip} сброшены`);
 }
 
 export default rateLimiter;
