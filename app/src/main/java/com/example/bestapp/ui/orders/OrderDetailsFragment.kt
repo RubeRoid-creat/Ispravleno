@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.bestapp.R
 import com.example.bestapp.api.ApiRepository
 import com.example.bestapp.api.models.ApiOrder
@@ -758,28 +759,105 @@ class OrderDetailsFragment : Fragment() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_complete_order, null)
         val inputFinalCost = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.input_final_cost)
         val inputRepairDescription = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.input_repair_description)
+        val recyclerWorks = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_works)
+        val recyclerParts = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_parts)
+        val btnAddWork = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_add_work)
+        val btnAddPart = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_add_part)
         
         // Устанавливаем текущую стоимость, если есть
         currentApiOrder?.estimatedCost?.let {
             inputFinalCost.setText(it.toString())
         }
         
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        // Настройка списка работ
+        val worksAdapter = WorkEntryAdapter().apply {
+            onRemove = { position ->
+                removeWork(position)
+            }
+        }
+        recyclerWorks.layoutManager = LinearLayoutManager(requireContext())
+        recyclerWorks.adapter = worksAdapter
+        
+        // Настройка списка запчастей
+        val partsAdapter = PartEntryAdapter().apply {
+            onRemove = { position ->
+                removePart(position)
+            }
+        }
+        recyclerParts.layoutManager = LinearLayoutManager(requireContext())
+        recyclerParts.adapter = partsAdapter
+        
+        btnAddWork.setOnClickListener {
+            worksAdapter.addWork()
+        }
+        
+        btnAddPart.setOnClickListener {
+            partsAdapter.addPart()
+        }
+        
+        // Предзаполняем первую работу проблемой из заказа (как подсказку)
+        val problemDescription = currentOrder?.problemDescription ?: currentApiOrder?.problemDescription
+        if (!problemDescription.isNullOrBlank()) {
+            worksAdapter.addWork(problemDescription)
+        }
+        
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setTitle("Завершить заказ")
             .setView(dialogView)
-            .setPositiveButton("Завершить") { _, _ ->
+            .setPositiveButton("Завершить", null) // Обработчик установим позже
+            .setNegativeButton("Отмена", null)
+            .create()
+        
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
                 val finalCost = inputFinalCost.text?.toString()?.toDoubleOrNull()
-                val repairDescription = inputRepairDescription.text?.toString()?.takeIf { it.isNotBlank() }
                 
                 if (finalCost == null) {
                     Toast.makeText(context, "Укажите финальную стоимость", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
+                    return@setOnClickListener
                 }
                 
-                completeOrder(finalCost, repairDescription)
+                // Собираем выполненные работы
+                val completedWorks = worksAdapter.getWorks()
+                
+                // Собираем использованные запчасти
+                val usedParts = partsAdapter.getParts()
+                
+                // Дополнительные комментарии
+                val additionalComments = inputRepairDescription.text?.toString()?.takeIf { it.isNotBlank() }
+                
+                // Формируем полное описание ремонта
+                val repairDescription = buildString {
+                    if (completedWorks.isNotEmpty()) {
+                        appendLine("Выполненные работы:")
+                        completedWorks.forEachIndexed { index, work ->
+                            appendLine("${index + 1}. $work")
+                        }
+                    }
+                    
+                    if (usedParts.isNotEmpty()) {
+                        if (isNotEmpty()) appendLine()
+                        appendLine("Использованные запчасти:")
+                        usedParts.forEachIndexed { index, part ->
+                            val cost = if (part.cost > 0) " (${part.cost} ₽)" else ""
+                            appendLine("${index + 1}. ${part.name} - ${part.quantity} шт.$cost")
+                        }
+                    }
+                    
+                    if (additionalComments != null) {
+                        if (isNotEmpty()) appendLine()
+                        appendLine("Дополнительно:")
+                        append(additionalComments)
+                    }
+                }.trim()
+                
+                completeOrder(finalCost, repairDescription.takeIf { it.isNotBlank() })
+                dialog.dismiss()
             }
-            .setNegativeButton("Отмена", null)
-            .show()
+        }
+        
+        dialog.show()
     }
     
     private fun completeOrder(finalCost: Double, repairDescription: String?) {
