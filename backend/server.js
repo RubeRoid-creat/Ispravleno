@@ -27,6 +27,7 @@ import routeOptimizationRoutes from './routes/route-optimization.js';
 import mlmRoutes from './routes/mlm.js';
 import verificationCodesRoutes from './routes/verification-codes.js';
 import newsRoutes from './routes/news.js';
+import remoteConfigRoutes from './routes/remote-config.js';
 // Импортируем push-notification-service для инициализации Firebase Admin SDK
 import './services/push-notification-service.js';
 // Инициализируем Redis для кэширования
@@ -401,6 +402,7 @@ app.use('/api/payments', paymentsRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/route-optimization', routeOptimizationRoutes);
 app.use('/api/mlm', statsRateLimiter(), mlmRoutes); // 200 запросов за 15 минут для MLM статистики
+app.use('/api/remote-config', remoteConfigRoutes); // Remote Config для обновления контента
 app.use('/api/version', versionRoutes);
 app.use('/api/news', newsRoutes);
 

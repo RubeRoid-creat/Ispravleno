@@ -15,12 +15,27 @@ import com.yandex.mapkit.MapKitFactory
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.example.bestapp.api.ApiRepository
 import com.example.bestapp.api.RetrofitClient
+import com.example.bestapp.updates.UpdateManager
+import com.example.bestapp.updates.UpdateCheckStatus
 import kotlinx.coroutines.launch
+import androidx.activity.result.contract.ActivityResultContracts
 
 class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var bottomNav: BottomNavigationView
     private val authViewModel: AuthViewModel by viewModels()
+    private lateinit var updateManager: UpdateManager
+    
+    // Launcher для In-App Updates
+    private val updateLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            Log.d("MainActivity", "✅ Обновление успешно установлено")
+        } else {
+            Log.d("MainActivity", "⚠️ Обновление отменено или не завершено")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +46,10 @@ class MainActivity : AppCompatActivity() {
         setupNavigation()
         setupAuth()
         checkServerConnection()
+        
+        // Инициализация менеджера обновлений
+        updateManager = UpdateManager(this, lifecycleScope)
+        setupUpdateObserver()
         checkAppVersion()
     }
     
@@ -124,18 +143,74 @@ class MainActivity : AppCompatActivity() {
                 
                 result.onSuccess { data ->
                     if (data.updateRequired) {
-                        showUpdateDialog(
-                            force = data.forceUpdate,
-                            currentVersion = data.currentVersion,
-                            releaseNotes = data.releaseNotes ?: "",
-                            downloadUrl = data.downloadUrl
+                        // Пытаемся использовать In-App Updates
+                        val inAppUpdateSuccess = updateManager.checkInAppUpdate(
+                            activity = this@MainActivity,
+                            forceUpdate = data.forceUpdate
                         )
+                        
+                        // Если In-App Updates не сработал, показываем обычный диалог
+                        if (!inAppUpdateSuccess) {
+                            showUpdateDialog(
+                                force = data.forceUpdate,
+                                currentVersion = data.currentVersion,
+                                releaseNotes = data.releaseNotes ?: "",
+                                downloadUrl = data.downloadUrl
+                            )
+                        }
                     }
                 }.onFailure { e ->
                     Log.e("MainActivity", "Version check failed: ${e.message}")
                 }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Version check error", e)
+            }
+        }
+    }
+    
+    /**
+     * Наблюдатель за статусом обновлений
+     */
+    private fun setupUpdateObserver() {
+        lifecycleScope.launch {
+            updateManager.updateCheckStatus.collect { status ->
+                when (status) {
+                    is UpdateCheckStatus.UpdateDownloaded -> {
+                        // Показываем уведомление о готовности обновления
+                        showUpdateReadyDialog()
+                    }
+                    is UpdateCheckStatus.Error -> {
+                        Log.e("MainActivity", "Update error: ${status.message}")
+                    }
+                    else -> {
+                        // Другие статусы логируем
+                        Log.d("MainActivity", "Update status: $status")
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Показать диалог о готовности обновления (для гибких обновлений)
+     */
+    private fun showUpdateReadyDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Обновление готово")
+            .setMessage("Обновление скачано и готово к установке. Перезапустить приложение?")
+            .setPositiveButton("Перезапустить") { _, _ ->
+                updateManager.completeFlexibleUpdate(this)
+            }
+            .setNegativeButton("Позже", null)
+            .show()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Проверяем, не было ли прервано обновление
+        updateManager.appUpdateManager?.appUpdateInfo?.addOnSuccessListener { appUpdateInfo ->
+            if (appUpdateInfo.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
+                showUpdateReadyDialog()
             }
         }
     }

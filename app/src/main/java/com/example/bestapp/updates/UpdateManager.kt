@@ -9,6 +9,11 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import com.example.bestapp.BuildConfig
 import com.example.bestapp.api.ApiRepository
+import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
@@ -35,9 +42,11 @@ class UpdateManager(
     companion object {
         private const val TAG = "UpdateManager"
         private const val UPDATE_FILE_NAME = "app-update.apk"
+        private const val REQUEST_CODE_UPDATE = 1001
     }
 
     private val apiRepository = ApiRepository()
+    val appUpdateManager: AppUpdateManager = AppUpdateManagerFactory.create(context)
 
     // Информация об обновлении
     private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
@@ -214,6 +223,117 @@ class UpdateManager(
     }
 
     /**
+     * Проверить обновления через Google Play In-App Updates
+     * @param activity Activity для запуска обновления
+     * @param forceUpdate Если true - использует IMMEDIATE режим, иначе FLEXIBLE
+     */
+    suspend fun checkInAppUpdate(activity: Activity, forceUpdate: Boolean = false): Boolean {
+        return suspendCancellableCoroutine { continuation ->
+            try {
+                appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+                    val updateAvailability = appUpdateInfo.updateAvailability()
+                    val isUpdateAvailable = updateAvailability == UpdateAvailability.UPDATE_AVAILABLE
+                    val isImmediateUpdateAllowed = appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
+                    val isFlexibleUpdateAllowed = appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+
+                    Log.d(TAG, "Update availability: $updateAvailability")
+                    Log.d(TAG, "Immediate allowed: $isImmediateUpdateAllowed, Flexible allowed: $isFlexibleUpdateAllowed")
+
+                    if (isUpdateAvailable) {
+                        if (forceUpdate && isImmediateUpdateAllowed) {
+                            // Немедленное обновление (блокирующее)
+                            startImmediateUpdate(activity, appUpdateInfo)
+                            continuation.resume(true)
+                        } else if (isFlexibleUpdateAllowed) {
+                            // Гибкое обновление (в фоне)
+                            startFlexibleUpdate(activity, appUpdateInfo)
+                            continuation.resume(true)
+                        } else {
+                            // Fallback на обычное обновление
+                            openGooglePlay()
+                            continuation.resume(false)
+                        }
+                    } else {
+                        Log.d(TAG, "Нет доступных обновлений")
+                        continuation.resume(false)
+                    }
+                }.addOnFailureListener { error ->
+                    Log.e(TAG, "Ошибка проверки In-App Update", error)
+                    continuation.resume(false)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Ошибка инициализации In-App Update", e)
+                continuation.resume(false)
+            }
+        }
+    }
+
+    /**
+     * Запустить немедленное обновление (блокирующее)
+     */
+    private fun startImmediateUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo) {
+        try {
+            appUpdateManager.startUpdateFlowForResult(
+                appUpdateInfo,
+                AppUpdateType.IMMEDIATE,
+                activity,
+                REQUEST_CODE_UPDATE
+            )
+            Log.d(TAG, "🚀 Запущено немедленное обновление")
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка запуска немедленного обновления", e)
+            openGooglePlay()
+        }
+    }
+
+    /**
+     * Запустить гибкое обновление (в фоне)
+     */
+    private fun startFlexibleUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo) {
+        try {
+            appUpdateManager.startUpdateFlowForResult(
+                appUpdateInfo,
+                AppUpdateType.FLEXIBLE,
+                activity,
+                REQUEST_CODE_UPDATE
+            )
+            Log.d(TAG, "🔄 Запущено гибкое обновление в фоне")
+            
+            // Слушаем прогресс обновления
+            appUpdateManager.registerListener { state ->
+                val bytesDownloaded = state.bytesDownloaded()
+                val totalBytesToDownload = state.totalBytesToDownload()
+                
+                if (totalBytesToDownload > 0) {
+                    val progress = ((bytesDownloaded * 100) / totalBytesToDownload).toInt()
+                    _downloadProgress.value = DownloadProgress(
+                        progress,
+                        "Загрузка обновления: ${progress}%"
+                    )
+                    Log.d(TAG, "Прогресс обновления: $progress%")
+                }
+                
+                // Когда обновление готово, показываем уведомление
+                if (state.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
+                    _updateCheckStatus.value = UpdateCheckStatus.UpdateDownloaded
+                    Log.d(TAG, "✅ Обновление скачано, готово к установке")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка запуска гибкого обновления", e)
+            openGooglePlay()
+        }
+    }
+
+    /**
+     * Завершить установку гибкого обновления (после перезапуска)
+     */
+    fun completeFlexibleUpdate(activity: Activity) {
+        appUpdateManager.completeUpdate()
+        Log.d(TAG, "🔄 Завершение установки обновления")
+    }
+
+    /**
      * Открыть страницу приложения в Google Play
      */
     fun openGooglePlay() {
@@ -270,5 +390,6 @@ sealed class UpdateCheckStatus {
     object Checking : UpdateCheckStatus()
     object NoUpdateAvailable : UpdateCheckStatus()
     data class UpdateAvailable(val updateInfo: UpdateInfo) : UpdateCheckStatus()
+    object UpdateDownloaded : UpdateCheckStatus() // Для гибких обновлений
     data class Error(val message: String) : UpdateCheckStatus()
 }

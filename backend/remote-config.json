@@ -1,0 +1,37 @@
+{
+  "maintenance_mode": false,
+  "min_app_version": "1.0.0",
+  "feature_flags": {
+    "enable_mlm": true,
+    "enable_chat": true,
+    "enable_statistics": true,
+    "enable_reports": true
+  },
+  "app_config": {
+    "max_orders_per_day": 10,
+    "default_commission_rate": 0.15,
+    "support_phone": "+79991234567",
+    "support_email": "support@masterprofi.ru"
+  },
+  "messages": {
+    "welcome_message": "Добро пожаловать в МастерПрофи!",
+    "maintenance_message": "Приложение временно недоступно. Ведутся технические работы."
+  },
+  "android_master": {
+    "feature_flags": {
+      "enable_mlm": true,
+      "enable_advanced_statistics": true
+    },
+    "app_config": {
+      "max_orders_per_day": 15
+    }
+  },
+  "android_client": {
+    "feature_flags": {
+      "enable_loyalty": true
+    },
+    "app_config": {
+      "max_orders_per_day": 5
+    }
+  }
+}
