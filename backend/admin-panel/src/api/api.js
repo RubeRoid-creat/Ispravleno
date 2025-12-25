@@ -126,6 +126,15 @@ export const newsAPI = {
   delete: (id) => api.delete(`/news/${id}`),
 };
 
+// Прайс-лист
+export const pricesAPI = {
+  getAll: (params) => api.get('/prices', { params }),
+  getById: (id) => api.get(`/prices/${id}`),
+  create: (data) => api.post('/prices', data),
+  update: (id, data) => api.put(`/prices/${id}`, data),
+  delete: (id) => api.delete(`/prices/${id}`),
+};
+
 // Чат с администрацией
 export const adminChatAPI = {
   getUsers: () => api.get('/admin/admin-chat/users'),

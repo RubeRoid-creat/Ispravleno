@@ -14,6 +14,7 @@ import Backups from './pages/Backups';
 import News from './pages/News';
 import AdminChat from './pages/AdminChat';
 import Feedback from './pages/Feedback';
+import Prices from './pages/Prices';
 
 const theme = createTheme({
   palette: {
@@ -62,6 +63,7 @@ function AppContent() {
                     <Route path="/feedback" element={<Feedback />} />
                     <Route path="/backups" element={<Backups />} />
                     <Route path="/news" element={<News />} />
+                    <Route path="/prices" element={<Prices />} />
                   </Routes>
                 </Layout>
               </PrivateRoute>
