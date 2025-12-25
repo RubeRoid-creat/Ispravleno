@@ -8,7 +8,9 @@ import com.example.bestapp.R
 import com.google.android.material.textfield.TextInputEditText
 
 data class WorkEntry(
-    var description: String = ""
+    var description: String = "",
+    var priceItemId: Long? = null, // ID из прайса (если выбрано из прайса)
+    var price: Double? = null // Цена из прайса
 )
 
 class WorkEntryAdapter : RecyclerView.Adapter<WorkEntryAdapter.WorkViewHolder>() {

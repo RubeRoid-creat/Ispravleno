@@ -335,6 +335,80 @@ class ApiRepository {
         }
     }
     
+    // ============= Прайс-лист =============
+    
+    suspend fun getPrices(category: String? = null, type: String? = null): Result<List<com.example.bestapp.api.models.ApiPrice>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.getPrices(category, type)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    val errorMessage = response.errorBody()?.string() ?: "Ошибка получения прайс-листа: ${response.code()}"
+                    Result.failure(Exception(errorMessage))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Get prices error", e)
+                val errorMessage = getErrorMessage(e, "Ошибка получения прайс-листа")
+                Result.failure(Exception(errorMessage))
+            }
+        }
+    }
+    
+    suspend fun getServices(category: String? = null): Result<List<com.example.bestapp.api.models.ApiPrice>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.getServices(category)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    val errorMessage = response.errorBody()?.string() ?: "Ошибка получения работ: ${response.code()}"
+                    Result.failure(Exception(errorMessage))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Get services error", e)
+                val errorMessage = getErrorMessage(e, "Ошибка получения работ")
+                Result.failure(Exception(errorMessage))
+            }
+        }
+    }
+    
+    suspend fun getParts(category: String? = null): Result<List<com.example.bestapp.api.models.ApiPrice>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.getParts(category)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    val errorMessage = response.errorBody()?.string() ?: "Ошибка получения запчастей: ${response.code()}"
+                    Result.failure(Exception(errorMessage))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Get parts error", e)
+                val errorMessage = getErrorMessage(e, "Ошибка получения запчастей")
+                Result.failure(Exception(errorMessage))
+            }
+        }
+    }
+    
+    suspend fun getCategories(type: String? = null): Result<List<String>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.getCategories(type)
+                if (response.isSuccessful && response.body() != null) {
+                    Result.success(response.body()!!)
+                } else {
+                    val errorMessage = response.errorBody()?.string() ?: "Ошибка получения категорий: ${response.code()}"
+                    Result.failure(Exception(errorMessage))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Get categories error", e)
+                val errorMessage = getErrorMessage(e, "Ошибка получения категорий")
+                Result.failure(Exception(errorMessage))
+            }
+        }
+    }
+    
     suspend fun createOrder(request: CreateOrderRequest): Result<CreateOrderResponse> {
         return withContext(Dispatchers.IO) {
             try {

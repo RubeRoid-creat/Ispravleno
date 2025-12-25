@@ -30,6 +30,7 @@ import newsRoutes from './routes/news.js';
 import remoteConfigRoutes from './routes/remote-config.js';
 import adminChatRoutes from './routes/admin-chat.js';
 import feedbackRoutes from './routes/feedback.js';
+import pricesRoutes from './routes/prices.js';
 // Импортируем push-notification-service для инициализации Firebase Admin SDK
 import './services/push-notification-service.js';
 // Инициализируем Redis для кэширования
@@ -419,6 +420,7 @@ app.use('/api/version', versionRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/admin-chat', adminChatRoutes); // Чат с администрацией
 app.use('/api/feedback', feedbackRoutes); // Обратная связь
+app.use('/api/prices', pricesRoutes); // Прайс-лист
 
 // Health check
 app.get('/health', (req, res) => {

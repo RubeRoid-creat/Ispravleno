@@ -732,4 +732,21 @@ CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(feedback_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback(status);
 CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);
 
+-- Таблица прайс-листа (работы и запчасти)
+CREATE TABLE IF NOT EXISTS prices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL, -- Категория техники (например, "холодильник", "стиральная машина")
+    name TEXT NOT NULL, -- Название работы или запчасти
+    price REAL NOT NULL, -- Цена
+    type TEXT NOT NULL CHECK(type IN ('service', 'part')), -- Тип: 'service' (работа) или 'part' (запчасть)
+    description TEXT, -- Описание (опционально)
+    unit TEXT DEFAULT 'шт', -- Единица измерения (шт, час, услуга и т.д.)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_prices_category ON prices(category);
+CREATE INDEX IF NOT EXISTS idx_prices_type ON prices(type);
+CREATE INDEX IF NOT EXISTS idx_prices_category_type ON prices(category, type);
+
 

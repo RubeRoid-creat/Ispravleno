@@ -10,7 +10,8 @@ import com.google.android.material.textfield.TextInputEditText
 data class PartEntry(
     var name: String = "",
     var quantity: Int = 1,
-    var cost: Double = 0.0
+    var cost: Double = 0.0,
+    var priceItemId: Long? = null // ID из прайса (если выбрано из прайса)
 )
 
 class PartEntryAdapter : RecyclerView.Adapter<PartEntryAdapter.PartViewHolder>() {

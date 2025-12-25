@@ -56,6 +56,29 @@ interface ApiService {
     @POST("api/orders/optimize-route")
     suspend fun optimizeRoute(@Body request: com.example.bestapp.api.models.OptimizeRouteRequest): Response<com.example.bestapp.api.models.OptimizedRouteResponse>
     
+    // ============= Прайс-лист =============
+    
+    @GET("api/prices")
+    suspend fun getPrices(
+        @Query("category") category: String? = null,
+        @Query("type") type: String? = null // 'service' or 'part'
+    ): Response<List<com.example.bestapp.api.models.ApiPrice>>
+    
+    @GET("api/prices/services")
+    suspend fun getServices(
+        @Query("category") category: String? = null
+    ): Response<List<com.example.bestapp.api.models.ApiPrice>>
+    
+    @GET("api/prices/parts")
+    suspend fun getParts(
+        @Query("category") category: String? = null
+    ): Response<List<com.example.bestapp.api.models.ApiPrice>>
+    
+    @GET("api/prices/categories")
+    suspend fun getCategories(
+        @Query("type") type: String? = null // 'service' or 'part'
+    ): Response<List<String>>
+    
     // ============= Мастера =============
     
     @GET("api/masters")
