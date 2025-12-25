@@ -27,6 +27,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -122,7 +123,7 @@ class AdminChatFragment : Fragment() {
         lifecycleScope.launch {
             val prefsManager = com.example.bestapp.data.PreferencesManager.getInstance(requireContext())
             val authManager = com.example.bestapp.auth.AuthManager(requireContext())
-            currentUserId = authManager.getUserId() ?: 0L
+            currentUserId = authManager.userId.first() ?: 0L
             
             // Обновляем адаптер с правильным userId
             adapter = ChatAdapter(currentUserId)

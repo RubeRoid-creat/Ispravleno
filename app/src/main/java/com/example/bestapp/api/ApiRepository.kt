@@ -1073,15 +1073,15 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val feedbackTypeBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("text/plain"),
+                    "text/plain".toMediaType(),
                     feedbackType
                 )
                 val subjectBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("text/plain"),
+                    "text/plain".toMediaType(),
                     subject
                 )
                 val messageBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("text/plain"),
+                    "text/plain".toMediaType(),
                     message
                 )
                 

@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -19,7 +20,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import android.widget.ImageView
 import com.example.bestapp.R
 import com.example.bestapp.api.ApiRepository
 import com.google.android.material.button.MaterialButton
@@ -193,15 +193,17 @@ class FeedbackFragment : Fragment() {
                 selectedAttachments.forEach { uri ->
                     try {
                         val inputStream = requireContext().contentResolver.openInputStream(uri)
-                        val bytes = inputStream?.readBytes() ?: continue
-                        inputStream.close()
+                        val bytes = inputStream?.readBytes()
+                        inputStream?.close()
                         
-                        val file = File.createTempFile("feedback_attachment_", ".jpg", requireContext().cacheDir)
-                        file.writeBytes(bytes)
-                        
-                        val requestFile = file.asRequestBody("image/jpeg".toMediaType())
-                        val part = okhttp3.MultipartBody.Part.createFormData("attachments", file.name, requestFile)
-                        attachmentParts.add(part)
+                        if (bytes != null) {
+                            val file = File.createTempFile("feedback_attachment_", ".jpg", requireContext().cacheDir)
+                            file.writeBytes(bytes)
+                            
+                            val requestFile = file.asRequestBody("image/jpeg".toMediaType())
+                            val part = okhttp3.MultipartBody.Part.createFormData("attachments", file.name, requestFile)
+                            attachmentParts.add(part)
+                        }
                     } catch (e: Exception) {
                         Log.e("FeedbackFragment", "Error processing attachment", e)
                     }
@@ -247,7 +249,7 @@ class FeedbackFragment : Fragment() {
         }
         
         inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            private val imagePhoto: ImageView = itemView.findViewById(R.id.image_photo)
+            private val imagePhoto: android.widget.ImageView = itemView.findViewById(R.id.image_photo)
             private val btnRemove: MaterialButton = itemView.findViewById(R.id.btn_remove_photo)
             
             fun bind(uri: Uri, position: Int) {
