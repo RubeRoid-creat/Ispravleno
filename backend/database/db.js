@@ -131,6 +131,44 @@ export async function initDatabase() {
               }
             }
             
+            // Автоматическое добавление поля referral_code в таблицу users
+            if (columnName === 'referral_code' && (statement.includes('users') || statement.toUpperCase().includes('FROM users') || statement.toUpperCase().includes('UPDATE users') || statement.toUpperCase().includes('INTO users'))) {
+              try {
+                const stmt = db.prepare("PRAGMA table_info(users)");
+                const tableInfo = [];
+                while (stmt.step()) {
+                  tableInfo.push(stmt.getAsObject());
+                }
+                stmt.free();
+                const hasReferralCode = tableInfo && tableInfo.some(col => col.name === 'referral_code');
+                
+                if (!hasReferralCode) {
+                  db.run('ALTER TABLE users ADD COLUMN referral_code TEXT UNIQUE');
+                  console.log('✅ Автоматически добавлено поле referral_code в таблицу users');
+                  // Создаем индекс для быстрого поиска
+                  try {
+                    db.run('CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code)');
+                  } catch (idxError) {
+                    // Игнорируем ошибку если индекс уже существует
+                  }
+                  // Повторяем запрос после добавления поля
+                  try {
+                    db.run(statement);
+                    continue;
+                  } catch (retryError) {
+                    if (retryError.message.includes('already exists') || retryError.message.includes('duplicate')) {
+                      continue;
+                    }
+                    throw retryError;
+                  }
+                }
+              } catch (alterError) {
+                if (!alterError.message.includes('duplicate column') && !alterError.message.includes('already exists')) {
+                  console.error('Ошибка добавления поля referral_code:', alterError);
+                }
+              }
+            }
+            
             // Автоматическое добавление поля sponsor_id в таблицу users
             if (columnName === 'sponsor_id' && (statement.includes('users') || statement.toUpperCase().includes('FROM users') || statement.toUpperCase().includes('UPDATE users') || statement.toUpperCase().includes('INTO users') || statement.toUpperCase().includes('idx_users_sponsor_id'))) {
               try {

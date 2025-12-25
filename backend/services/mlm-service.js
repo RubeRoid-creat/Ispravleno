@@ -1,8 +1,104 @@
 import { query } from '../database/db.js';
+import crypto from 'crypto';
 
 /**
  * MLM Service - бизнес-логика для многоуровневой маркетинговой системы
  */
+
+/**
+ * Генерация уникального реферального кода
+ * Формат: MP-XXXX-XXXX (например: MP-A3B7-K9M2)
+ * @param {number} userId - ID пользователя для создания уникального кода
+ * @returns {string} Уникальный реферальный код
+ */
+function generateReferralCode(userId) {
+  // Создаем хеш на основе user_id и случайного соли
+  const salt = userId.toString() + Date.now().toString();
+  const hash = crypto.createHash('sha256').update(salt).digest('hex');
+  
+  // Берем первые 8 символов хеша и преобразуем в буквенно-цифровой код
+  const hashPart = hash.substring(0, 8);
+  
+  // Преобразуем в формат с буквами и цифрами (убираем похожие символы: 0, O, I, 1, l)
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Убрали 0, O, I, 1, l для читаемости
+  let code = '';
+  
+  // Преобразуем каждый байт хеша в символ из алфавита
+  for (let i = 0; i < 8; i++) {
+    const byte = parseInt(hashPart[i], 16); // Преобразуем hex в число
+    code += chars[byte % chars.length];
+  }
+  
+  // Форматируем как MP-XXXX-XXXX
+  return `MP-${code.substring(0, 4)}-${code.substring(4, 8)}`;
+}
+
+/**
+ * Получить или создать реферальный код для пользователя
+ * @param {number} userId - ID пользователя
+ * @returns {string} Реферальный код
+ */
+export function getOrCreateReferralCode(userId) {
+  try {
+    // Проверяем, есть ли уже код в базе
+    const user = query.get('SELECT referral_code FROM users WHERE id = ?', [userId]);
+    
+    if (user?.referral_code) {
+      return user.referral_code;
+    }
+    
+    // Генерируем новый уникальный код
+    let referralCode;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    do {
+      referralCode = generateReferralCode(userId + attempts);
+      // Проверяем уникальность
+      const existing = query.get('SELECT id FROM users WHERE referral_code = ?', [referralCode]);
+      if (!existing) {
+        break; // Код уникален
+      }
+      attempts++;
+    } while (attempts < maxAttempts);
+    
+    if (attempts >= maxAttempts) {
+      // Если не удалось создать уникальный код, используем fallback
+      referralCode = `MP-${userId.toString().padStart(6, '0')}-${Date.now().toString().slice(-4)}`;
+    }
+    
+    // Сохраняем код в базу данных
+    query.run('UPDATE users SET referral_code = ? WHERE id = ?', [referralCode, userId]);
+    
+    console.log(`✅ Создан реферальный код для user_id=${userId}: ${referralCode}`);
+    return referralCode;
+  } catch (error) {
+    console.error('Ошибка получения/создания реферального кода:', error);
+    // Fallback на простой код
+    return `MP-${userId.toString().padStart(6, '0')}`;
+  }
+}
+
+/**
+ * Найти пользователя по реферальному коду
+ * @param {string} referralCode - Реферальный код
+ * @returns {Object|null} Информация о пользователе или null
+ */
+export function findUserByReferralCode(referralCode) {
+  try {
+    const user = query.get(`
+      SELECT u.id, u.name, u.email, u.phone, m.id as master_id
+      FROM users u
+      LEFT JOIN masters m ON m.user_id = u.id
+      WHERE u.referral_code = ?
+    `, [referralCode]);
+    
+    return user || null;
+  } catch (error) {
+    console.error('Ошибка поиска пользователя по реферальному коду:', error);
+    return null;
+  }
+}
 
 // Константы комиссий
 const COMMISSION_RATES = {

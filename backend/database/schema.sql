@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('client', 'master', 'admin')),
     sponsor_id INTEGER, -- ID спонсора (мастера, который пригласил)
+    referral_code TEXT UNIQUE, -- Уникальный реферальный код (формат: MP-XXXX-XXXX)
     rank TEXT DEFAULT 'junior_master' CHECK(rank IN ('junior_master', 'senior_master', 'team_leader', 'regional_manager')),
     email_verified INTEGER DEFAULT 0, -- 0 = false, 1 = true
     phone_verified INTEGER DEFAULT 0, -- 0 = false, 1 = true

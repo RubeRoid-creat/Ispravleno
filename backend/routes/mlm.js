@@ -6,7 +6,9 @@ import {
   getDownlineStructure,
   getMLMStatistics,
   inviteMaster,
-  calculateMLMCommissions
+  calculateMLMCommissions,
+  getOrCreateReferralCode,
+  findUserByReferralCode
 } from '../services/mlm-service.js';
 
 const router = express.Router();
@@ -154,13 +156,22 @@ router.get('/commissions', authenticate, authorize('master'), (req, res) => {
  */
 router.post('/invite', authenticate, authorize('master'), (req, res) => {
   try {
-    const { user_id, email } = req.body;
+    const { user_id, email, referral_code } = req.body;
 
-    if (!user_id && !email) {
-      return res.status(400).json({ error: 'Укажите user_id или email пользователя' });
+    if (!user_id && !email && !referral_code) {
+      return res.status(400).json({ error: 'Укажите user_id, email или referral_code пользователя' });
     }
 
     let newUserId = user_id;
+
+    // Если передан referral_code, находим user_id по коду
+    if (!newUserId && referral_code) {
+      const userByCode = findUserByReferralCode(referral_code);
+      if (!userByCode) {
+        return res.status(404).json({ error: 'Пользователь с таким реферальным кодом не найден' });
+      }
+      newUserId = userByCode.id;
+    }
 
     // Если передан email, находим user_id
     if (!newUserId && email) {
@@ -195,9 +206,9 @@ router.post('/invite', authenticate, authorize('master'), (req, res) => {
  */
 router.get('/my-referral-code', authenticate, authorize('master'), (req, res) => {
   try {
-    // Реферальный код - это просто user_id или можно сделать более сложный
-    const referralCode = `REF-${req.user.id}`;
-    const referralLink = `${process.env.APP_URL || 'https://masterprofi.ru'}/invite/${req.user.id}`;
+    // Получаем или создаем уникальный реферальный код
+    const referralCode = getOrCreateReferralCode(req.user.id);
+    const referralLink = `${process.env.APP_URL || 'https://masterprofi.ru'}/invite/${referralCode}`;
 
     res.json({
       success: true,
