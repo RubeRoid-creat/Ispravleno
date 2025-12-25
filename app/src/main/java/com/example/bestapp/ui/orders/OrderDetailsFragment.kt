@@ -114,7 +114,6 @@ class OrderDetailsFragment : Fragment() {
     private var btnReject: MaterialButton? = null
     private var btnBuildRoute: MaterialButton? = null
     private var btnChat: MaterialButton? = null
-    private var btnCreateReport: MaterialButton? = null
     private var btnCompleteOrder: MaterialButton? = null
     private var btnCallClient: MaterialButton? = null
     private var btnSmsClient: MaterialButton? = null
@@ -204,7 +203,6 @@ class OrderDetailsFragment : Fragment() {
         btnReject = view.findViewById(R.id.btn_reject)
         btnBuildRoute = view.findViewById(R.id.btn_build_route)
         btnChat = view.findViewById(R.id.btn_chat)
-        btnCreateReport = view.findViewById(R.id.btn_create_report)
         btnCompleteOrder = view.findViewById(R.id.btn_complete_order)
         // Кнопки звонка и SMS удалены из layout
         // btnCallClient = view.findViewById(R.id.btn_call_client)
@@ -712,11 +710,6 @@ class OrderDetailsFragment : Fragment() {
                 Log.d(TAG, "Buttons are now GONE (assignmentId=$currentAssignmentId, status=$currentAssignmentStatus)")
             }
             
-            // Показать кнопку создания отчета для заказов в работе или завершенных
-            val canCreateReport = order.status == RepairStatus.IN_PROGRESS || order.status == RepairStatus.COMPLETED
-            btnCreateReport?.visibility = if (canCreateReport) View.VISIBLE else View.GONE
-            Log.d(TAG, "Can create report: $canCreateReport (orderStatus=${order.status})")
-            
             // Показать кнопку завершения заказа только для заказов в работе
             val canCompleteOrder = order.status == RepairStatus.IN_PROGRESS
             btnCompleteOrder?.visibility = if (canCompleteOrder) View.VISIBLE else View.GONE
@@ -751,18 +744,6 @@ class OrderDetailsFragment : Fragment() {
                 putLong("orderId", currentOrder?.id ?: 0L)
             }
             findNavController().navigate(R.id.action_order_details_to_chat, bundle)
-        }
-        
-        btnCreateReport?.setOnClickListener {
-            val orderId = currentOrder?.id ?: currentApiOrder?.id ?: 0L
-            if (orderId > 0) {
-                val bundle = Bundle().apply {
-                    putLong("orderId", orderId)
-                }
-                findNavController().navigate(R.id.action_order_details_to_work_report, bundle)
-            } else {
-                Toast.makeText(context, "Не удалось определить ID заказа", Toast.LENGTH_SHORT).show()
-            }
         }
         
         btnCompleteOrder?.setOnClickListener {

@@ -668,15 +668,6 @@
                 app:icon="@android:drawable/ic_menu_revert"
                 app:iconTint="@android:color/white" />
 
-            <!-- Кнопка создания отчета (для завершенных заказов) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_create_report"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Создать отчет о работе"
-                android:visibility="gone"
-                app:icon="@android:drawable/ic_menu_edit" />
 
         </LinearLayout>
 
