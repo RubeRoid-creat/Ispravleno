@@ -12,6 +12,7 @@ import com.example.bestapp.api.ApiRepository
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.CoroutineScope
@@ -247,11 +248,11 @@ class UpdateManager(
                     if (isUpdateAvailable) {
                         if (forceUpdate && isImmediateUpdateAllowed) {
                             // Немедленное обновление (блокирующее)
-                            startImmediateUpdate(activity, appUpdateInfo, updateLauncher)
+                            startImmediateUpdate(appUpdateInfo, updateLauncher)
                             continuation.resume(true)
                         } else if (isFlexibleUpdateAllowed) {
                             // Гибкое обновление (в фоне)
-                            startFlexibleUpdate(activity, appUpdateInfo, updateLauncher)
+                            startFlexibleUpdate(appUpdateInfo, updateLauncher)
                             continuation.resume(true)
                         } else {
                             // Fallback на обычное обновление
@@ -277,17 +278,13 @@ class UpdateManager(
      * Запустить немедленное обновление (блокирующее)
      * @param updateLauncher ActivityResultLauncher для обработки результата
      */
-    fun startImmediateUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo, updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>) {
+    fun startImmediateUpdate(
+        appUpdateInfo: AppUpdateInfo, 
+        updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>
+    ) {
         try {
-            val intentSenderRequest = androidx.activity.result.IntentSenderRequest.Builder(
-                appUpdateInfo.getIntentSenderForResult(
-                    activity,
-                    AppUpdateType.IMMEDIATE,
-                    REQUEST_CODE_UPDATE
-                ) ?: throw Exception("IntentSender is null")
-            ).build()
-            
-            updateLauncher.launch(intentSenderRequest)
+            val options = AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
+            appUpdateManager.startUpdateFlowForResult(appUpdateInfo, updateLauncher, options)
             Log.d(TAG, "🚀 Запущено немедленное обновление")
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка запуска немедленного обновления", e)
@@ -299,17 +296,13 @@ class UpdateManager(
      * Запустить гибкое обновление (в фоне)
      * @param updateLauncher ActivityResultLauncher для обработки результата
      */
-    fun startFlexibleUpdate(activity: Activity, appUpdateInfo: AppUpdateInfo, updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>) {
+    fun startFlexibleUpdate(
+        appUpdateInfo: AppUpdateInfo, 
+        updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>
+    ) {
         try {
-            val intentSenderRequest = androidx.activity.result.IntentSenderRequest.Builder(
-                appUpdateInfo.getIntentSenderForResult(
-                    activity,
-                    AppUpdateType.FLEXIBLE,
-                    REQUEST_CODE_UPDATE
-                ) ?: throw Exception("IntentSender is null")
-            ).build()
-            
-            updateLauncher.launch(intentSenderRequest)
+            val options = AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
+            appUpdateManager.startUpdateFlowForResult(appUpdateInfo, updateLauncher, options)
             Log.d(TAG, "🔄 Запущено гибкое обновление в фоне")
             
             // Слушаем прогресс обновления
