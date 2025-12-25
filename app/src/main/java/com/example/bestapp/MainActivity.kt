@@ -207,10 +207,16 @@ class MainActivity : AppCompatActivity() {
     
     override fun onResume() {
         super.onResume()
-        // Проверяем, не было ли прервано обновление
-        updateManager.appUpdateManager?.appUpdateInfo?.addOnSuccessListener { appUpdateInfo ->
-            if (appUpdateInfo.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
-                showUpdateReadyDialog()
+        // Проверяем, не было ли прервано обновление (для гибких обновлений)
+        lifecycleScope.launch {
+            try {
+                updateManager.appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+                    if (appUpdateInfo.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
+                        showUpdateReadyDialog()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error checking update status", e)
             }
         }
     }
