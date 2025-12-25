@@ -90,22 +90,33 @@ class VerificationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        val toolbar = view.findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
+        try {
+            val toolbar = view.findViewById<MaterialToolbar>(R.id.toolbar)
+            toolbar?.setNavigationOnClickListener {
+                try {
+                    findNavController().navigateUp()
+                } catch (e: Exception) {
+                    Log.e("VerificationFragment", "Ошибка навигации назад", e)
+                    activity?.onBackPressed()
+                }
+            }
         
         val recyclerDocs = view.findViewById<RecyclerView>(R.id.recycler_documents)
         val recyclerCerts = view.findViewById<RecyclerView>(R.id.recycler_certificates)
         val recyclerPortfolio = view.findViewById<RecyclerView>(R.id.recycler_portfolio)
         val recyclerUploaded = view.findViewById<RecyclerView>(R.id.recycler_uploaded_documents)
         
-        recyclerDocs.layoutManager = LinearLayoutManager(context)
-        recyclerCerts.layoutManager = LinearLayoutManager(context)
-        recyclerPortfolio.layoutManager = GridLayoutManager(context, 3)
-        
-        // Для загруженных документов используем GridLayoutManager
-        recyclerUploaded?.layoutManager = GridLayoutManager(context, 2)
+        try {
+            val ctx = requireContext()
+            recyclerDocs?.layoutManager = LinearLayoutManager(ctx)
+            recyclerCerts?.layoutManager = LinearLayoutManager(ctx)
+            recyclerPortfolio?.layoutManager = GridLayoutManager(ctx, 3)
+            
+            // Для загруженных документов используем GridLayoutManager
+            recyclerUploaded?.layoutManager = GridLayoutManager(ctx, 2)
+        } catch (e: Exception) {
+            Log.e("VerificationFragment", "Ошибка инициализации layout managers", e)
+        }
         
         inputInn = view.findViewById(R.id.input_inn)
         val btnAddDoc = view.findViewById<MaterialButton>(R.id.btn_add_document)
@@ -113,27 +124,32 @@ class VerificationFragment : Fragment() {
         val btnAddPortfolio = view.findViewById<MaterialButton>(R.id.btn_add_portfolio)
         val btnSubmit = view.findViewById<MaterialButton>(R.id.btn_submit)
         
-        btnAddDoc.setOnClickListener {
-            currentDocumentType = DocumentType.PASSPORT
-            checkPermissionAndOpenPicker()
+        try {
+            btnAddDoc?.setOnClickListener {
+                currentDocumentType = DocumentType.PASSPORT
+                checkPermissionAndOpenPicker()
+            }
+            
+            btnAddCert?.setOnClickListener {
+                currentDocumentType = DocumentType.CERTIFICATE
+                checkPermissionAndOpenPicker()
+            }
+            
+            btnAddPortfolio?.setOnClickListener {
+                currentDocumentType = DocumentType.PORTFOLIO
+                checkPermissionAndOpenPicker()
+            }
+            
+            btnSubmit?.setOnClickListener {
+                submitVerification()
+            }
+            
+            // Загружаем уже загруженные документы и статус верификации
+            loadVerificationData()
+        } catch (e: Exception) {
+            Log.e("VerificationFragment", "Ошибка инициализации кнопок", e)
+            Toast.makeText(context, "Ошибка инициализации экрана верификации", Toast.LENGTH_SHORT).show()
         }
-        
-        btnAddCert.setOnClickListener {
-            currentDocumentType = DocumentType.CERTIFICATE
-            checkPermissionAndOpenPicker()
-        }
-        
-        btnAddPortfolio.setOnClickListener {
-            currentDocumentType = DocumentType.PORTFOLIO
-            checkPermissionAndOpenPicker()
-        }
-        
-        btnSubmit.setOnClickListener {
-            submitVerification()
-        }
-        
-        // Загружаем уже загруженные документы и статус верификации
-        loadVerificationData()
     }
     
     private fun checkPermissionAndOpenPicker() {
@@ -166,11 +182,18 @@ class VerificationFragment : Fragment() {
     }
     
     private fun loadVerificationData() {
+        if (!isAdded || context == null) {
+            Log.w("VerificationFragment", "Fragment not attached, skipping loadVerificationData")
+            return
+        }
+        
         lifecycleScope.launch {
             try {
                 // Загружаем документы с сервера
                 val documentsResult = apiRepository.getVerificationDocuments()
                 documentsResult.onSuccess { docs ->
+                    if (!isAdded) return@onSuccess
+                    
                     uploadedDocuments.clear()
                     uploadedDocuments.addAll(docs)
                     updateUploadedDocumentsView()
@@ -191,12 +214,16 @@ class VerificationFragment : Fragment() {
                     updateUIForStatus()
                 }.onFailure { error ->
                     Log.e("VerificationFragment", "Ошибка загрузки документов", error)
-                    // Если документов нет, показываем форму загрузки
-                    updateUIForStatus()
+                    if (isAdded) {
+                        // Если документов нет, показываем форму загрузки
+                        updateUIForStatus()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("VerificationFragment", "Ошибка загрузки данных верификации", e)
-                updateUIForStatus()
+                if (isAdded) {
+                    updateUIForStatus()
+                }
             }
         }
     }
