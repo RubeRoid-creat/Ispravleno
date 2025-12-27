@@ -76,16 +76,16 @@ pm2 logs ispravleno-website
 
 ```bash
 cat .env | grep PORT
-# Должно быть: PORT=3002
+# Должно быть: PORT=3003
 ```
 
-## Если порт 3002 уже занят
+## Если порт 3003 уже занят
 
-Если видите ошибку `EADDRINUSE: address already in use 0.0.0.0:3002`:
+Если видите ошибку `EADDRINUSE: address already in use 0.0.0.0:3003`:
 
 ```bash
 # 1. Найдите процесс, который занимает порт
-sudo lsof -i :3002
+sudo lsof -i :3003
 
 # 2. Остановите старый PM2 процесс (если есть)
 pm2 stop ispravleno-website
@@ -96,14 +96,14 @@ pm2 delete ispravleno-website
 kill -9 <PID>
 
 # 4. Проверьте, что порт свободен
-sudo lsof -i :3002
+sudo lsof -i :3003
 # Должно быть пусто
 
 # 5. Запустите заново
 pm2 start ecosystem.config.js
 ```
 
-Подробнее см. [FIX_PORT_3002.md](./FIX_PORT_3002.md)
+Подробнее см. [FIX_PORT_3002.md](./FIX_PORT_3002.md) (файл обновлен для порта 3003)
 
 ## Если все еще не работает
 

@@ -48,7 +48,7 @@ NEXT_PUBLIC_SITE_URL="http://212.74.227.208:3003"
 NEXT_PUBLIC_YANDEX_MAPS_API_KEY="your_yandex_maps_api_key"
 
 # Порт (для production)
-PORT=3002
+PORT=3003
 ```
 
 ### 3. Запуск через Docker
@@ -60,7 +60,7 @@ docker build -t ispravleno-website .
 # Запустите контейнер
 docker run -d \
   --name ispravleno-website \
-  -p 3002:3000 \
+  -p 3003:3000 \
   --env-file .env \
   --restart unless-stopped \
   ispravleno-website

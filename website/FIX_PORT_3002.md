@@ -62,7 +62,7 @@ kill -9 12345
 
 ```bash
 # Найдите сервис
-sudo systemctl list-units | grep 3002
+sudo systemctl list-units | grep 3003
 
 # Или проверьте все сервисы
 sudo systemctl list-units --type=service | grep ispravleno
