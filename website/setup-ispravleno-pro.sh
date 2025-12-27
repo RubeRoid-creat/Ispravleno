@@ -43,7 +43,29 @@ fi
 # Шаг 3: Копирование конфигурации
 echo ""
 echo "Шаг 3: Настройка конфигурации Nginx..."
-cd /var/www/ispravleno-website/website
+
+# Определяем директорию проекта (скрипт должен запускаться из директории website)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_DIR="$SCRIPT_DIR"
+
+# Если скрипт не в директории website, пытаемся найти правильную директорию
+if [ ! -f "$PROJECT_DIR/package.json" ]; then
+    # Пробуем стандартные пути
+    if [ -d "/var/www/ispravleno-website/website" ]; then
+        PROJECT_DIR="/var/www/ispravleno-website/website"
+    elif [ -d "$HOME/Ispravleno/ispravleno-website/website" ]; then
+        PROJECT_DIR="$HOME/Ispravleno/ispravleno-website/website"
+    elif [ -d "$HOME/Ispravleno/website" ]; then
+        PROJECT_DIR="$HOME/Ispravleno/website"
+    else
+        echo "✗ Ошибка: не могу найти директорию проекта"
+        echo "Запустите скрипт из директории website проекта"
+        exit 1
+    fi
+fi
+
+echo "Используется директория проекта: $PROJECT_DIR"
+cd "$PROJECT_DIR"
 
 # Создаем конфигурацию с доменом
 sudo tee /etc/nginx/sites-available/ispravleno-website > /dev/null <<EOF
@@ -135,6 +157,7 @@ sudo certbot --nginx -d ${DOMAIN} -d www.${DOMAIN} --non-interactive --agree-tos
 # Шаг 6: Обновление .env
 echo ""
 echo "Шаг 6: Обновление переменных окружения..."
+cd "$PROJECT_DIR"
 if [ -f .env ]; then
     # Определяем протокол (HTTP или HTTPS)
     if sudo certbot certificates 2>/dev/null | grep -q "$DOMAIN"; then
@@ -160,6 +183,7 @@ fi
 # Шаг 7: Обновление next.config.js
 echo ""
 echo "Шаг 7: Обновление next.config.js..."
+cd "$PROJECT_DIR"
 if [ -f next.config.js ]; then
     # Проверяем, есть ли домен в domains
     if ! grep -q "$DOMAIN" next.config.js; then
@@ -177,7 +201,8 @@ echo ""
 echo "=========================================="
 echo "Настройка завершена!"
 echo ""
-echo "Следующие шаги:"
+echo "Следующие шаги (выполните в директории $PROJECT_DIR):"
+echo "cd $PROJECT_DIR"
 echo "1. Пересоберите проект: npm run build"
 echo "2. Перезапустите PM2: pm2 restart ispravleno-website"
 echo "3. Проверьте сайт: http://${DOMAIN} или https://${DOMAIN}"
