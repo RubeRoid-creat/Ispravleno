@@ -48,3 +48,7 @@ backend/public/updates/*.apk
 
 # APK files in root directory
 *.apk
+
+# Keystore files (NEVER commit these!)
+keystore/
+keystore.properties

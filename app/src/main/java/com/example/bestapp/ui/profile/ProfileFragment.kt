@@ -77,6 +77,7 @@ class ProfileFragment : Fragment() {
         val statusIndicator = view.findViewById<View>(R.id.status_indicator)
         val masterCompletedOrders = view.findViewById<TextView>(R.id.master_completed_orders)
         val verificationChip = view.findViewById<Chip>(R.id.verification_status_chip)
+        val verificationChipHeader = view.findViewById<Chip>(R.id.verification_status_chip_header)
         val btnEditMasterInfo = view.findViewById<MaterialButton>(R.id.btn_edit_master_info)
         val btnVerification = view.findViewById<MaterialButton>(R.id.btn_verification)
         val btnWallet = view.findViewById<MaterialButton>(R.id.btn_wallet)
@@ -238,8 +239,13 @@ class ProfileFragment : Fragment() {
             val statusIndicator = it.findViewById<View>(R.id.status_indicator)
             val masterCompletedOrders = it.findViewById<TextView>(R.id.master_completed_orders)
             val verificationChip = it.findViewById<Chip>(R.id.verification_status_chip)
+            val verificationChipHeader = it.findViewById<Chip>(R.id.verification_status_chip_header)
             val masterAvatar = it.findViewById<ImageView>(R.id.master_avatar)
             loadMasterInfo(masterName, masterEmail, masterPhone, masterSpec, masterRating, masterReviewsCount, masterStatus, statusIndicator, masterCompletedOrders, verificationChip, masterAvatar)
+            
+            // Синхронизируем оба чипа верификации
+            verificationChipHeader?.text = verificationChip?.text
+            verificationChipHeader?.chipBackgroundColor = verificationChip?.chipBackgroundColor
             
             // Загружаем статус подтверждения
             val emailStatus = it.findViewById<TextView>(R.id.email_verified_status)
