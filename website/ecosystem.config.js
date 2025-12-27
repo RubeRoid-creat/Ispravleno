@@ -15,6 +15,12 @@ module.exports = {
         PORT: 3003,
         HOSTNAME: '0.0.0.0',
       },
+      // Убедитесь, что приложение слушает на всех интерфейсах
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3003,
+        HOSTNAME: '0.0.0.0',
+      },
       env_file: '.env',
       error_file: './logs/err.log',
       out_file: './logs/out.log',
