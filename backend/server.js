@@ -62,7 +62,9 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
-// Статичный сайт обновлений приложений
+// Статичные файлы приложений (APK) для скачивания
+app.use('/apps', express.static(join(__dirname, 'public', 'updates')));
+// Оставляем /updates для обратной совместимости
 app.use('/updates', express.static(join(__dirname, 'public', 'updates')));
 
 // Админ-панель (SPA на React/Vite), собирается в backend/admin-panel/dist
