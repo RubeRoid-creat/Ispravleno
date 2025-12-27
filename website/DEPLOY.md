@@ -251,7 +251,7 @@ docker-compose up -d
 
 ## Проверка работоспособности
 
-1. Откройте в браузере: `http://212.74.227.208:3001`
+1. Откройте в браузере: `http://212.74.227.208:3002`
 2. Проверьте логи:
    - PM2: `pm2 logs ispravleno-website`
    - Systemd: `sudo journalctl -u ispravleno-website -f`
