@@ -48,7 +48,7 @@ pm2 save
 **Вариант 2: Напрямую через PM2**
 
 ```bash
-PORT=3003 pm2 start npm --name "ispravleno-website" -- run start:standalone
+PORT=3003 pm2 start npm --name "ispravleno-website" -- start
 pm2 save
 ```
 

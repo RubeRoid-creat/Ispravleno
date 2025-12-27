@@ -1,9 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', '212.74.227.208'],
   },
-  output: 'standalone',
+  // Отключаем standalone режим для упрощения (можно включить позже при необходимости)
+  // output: 'standalone',
+  basePath: '',
+  assetPrefix: '',
 }
 
 module.exports = nextConfig

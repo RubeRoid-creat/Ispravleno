@@ -5,8 +5,11 @@ module.exports = {
   apps: [
     {
       name: 'ispravleno-website',
-      script: 'node',
-      args: '.next/standalone/server.js',
+      script: 'node_modules/.bin/next',
+      args: 'start',
+      // Альтернатива для standalone (если используется):
+      // script: 'node',
+      // args: '.next/standalone/server.js',
       // cwd будет автоматически установлен в директорию, где запускается PM2
       instances: 1,
       exec_mode: 'fork',

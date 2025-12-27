@@ -89,8 +89,8 @@ mkdir -p logs
 # Запустите приложение используя ecosystem.config.js (рекомендуется)
 pm2 start ecosystem.config.js
 
-# ИЛИ запустите напрямую (если ecosystem.config.js не используется)
-PORT=3003 pm2 start npm --name "ispravleno-website" -- run start:standalone
+# ИЛИ запустите напрямую через npm
+PORT=3003 pm2 start npm --name "ispravleno-website" -- start
 
 # Сохраните конфигурацию PM2
 pm2 save
