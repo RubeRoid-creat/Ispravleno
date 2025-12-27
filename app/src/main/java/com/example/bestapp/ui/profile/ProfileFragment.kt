@@ -84,6 +84,7 @@ class ProfileFragment : Fragment() {
         val btnAdminChat = view.findViewById<MaterialButton>(R.id.btn_admin_chat)
         val btnFeedback = view.findViewById<MaterialButton>(R.id.btn_feedback)
         val btnFeedbackList = view.findViewById<MaterialButton>(R.id.btn_feedback_list)
+        val btnSettings = view.findViewById<MaterialButton>(R.id.btn_settings)
         val btnVerifyEmail = view.findViewById<MaterialButton>(R.id.btn_verify_email)
         val btnVerifyPhone = view.findViewById<MaterialButton>(R.id.btn_verify_phone)
         val emailVerifiedStatus = view.findViewById<TextView>(R.id.email_verified_status)
@@ -218,6 +219,17 @@ class ProfileFragment : Fragment() {
                     findNavController().navigate(R.id.action_profile_to_feedback_list)
                 } catch (e: Exception) {
                     Log.e("ProfileFragment", "Ошибка навигации к списку отзывов", e)
+                    Toast.makeText(requireContext(), "Ошибка перехода: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        
+        btnSettings?.setOnClickListener {
+            if (isAdded) {
+                try {
+                    findNavController().navigate(R.id.action_profile_to_settings)
+                } catch (e: Exception) {
+                    Log.e("ProfileFragment", "Ошибка навигации к настройкам", e)
                     Toast.makeText(requireContext(), "Ошибка перехода: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }

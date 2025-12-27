@@ -229,6 +229,9 @@
             android:id="@+id/action_profile_to_feedback_list"
             app:destination="@id/feedbackListFragment" />
         <action
+            android:id="@+id/action_profile_to_settings"
+            app:destination="@id/nav_settings" />
+        <action
             android:id="@+id/action_profile_to_login"
             app:destination="@id/loginFragment"
             app:popUpTo="@id/nav_graph"

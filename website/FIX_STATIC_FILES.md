@@ -20,23 +20,27 @@
 ```bash
 cd /var/www/ispravleno-website/website
 
-# 1. Остановите процесс
-pm2 stop ispravleno-website
+# 1. Обновите код из репозитория
+git pull origin main
 
-# 2. Очистите и пересоберите
+# 2. Остановите процесс
+pm2 stop ispravleno-website
+pm2 delete ispravleno-website
+
+# 3. Очистите и пересоберите
 rm -rf .next node_modules
 npm install --legacy-peer-deps
+npx prisma generate
 npm run build
 
-# 3. Проверьте, что статические файлы созданы
+# 4. Проверьте, что статические файлы созданы (теперь они в .next/static/)
 ls -la .next/static/
-ls -la .next/standalone/.next/static/
 
-# 4. Запустите заново
+# 5. Запустите заново (теперь используется обычный режим)
 pm2 start ecosystem.config.js
 pm2 save
 
-# 5. Проверьте логи
+# 6. Проверьте логи
 pm2 logs ispravleno-website
 ```
 
