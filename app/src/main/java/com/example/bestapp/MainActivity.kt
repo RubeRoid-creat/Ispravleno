@@ -10,6 +10,8 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.bestapp.ui.auth.AuthViewModel
+import com.example.bestapp.ui.update.UpdateViewModel
+import com.example.bestapp.ui.update.UpdateDialogFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.yandex.mapkit.MapKitFactory
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -17,25 +19,15 @@ import com.example.bestapp.api.ApiRepository
 import com.example.bestapp.api.RetrofitClient
 import com.example.bestapp.updates.UpdateManager
 import com.example.bestapp.updates.UpdateCheckStatus
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.launch
-import androidx.activity.result.contract.ActivityResultContracts
 
 class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var bottomNav: BottomNavigationView
     private val authViewModel: AuthViewModel by viewModels()
     private lateinit var updateManager: UpdateManager
-    
-    // Launcher для In-App Updates
-    private val updateLauncher = registerForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            Log.d("MainActivity", "✅ Обновление успешно установлено")
-        } else {
-            Log.d("MainActivity", "⚠️ Обновление отменено или не завершено")
-        }
-    }
+    private lateinit var updateViewModel: UpdateViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +41,9 @@ class MainActivity : AppCompatActivity() {
         
         // Инициализация менеджера обновлений
         updateManager = UpdateManager(this, lifecycleScope)
+        updateViewModel = ViewModelProvider(this)[UpdateViewModel::class.java]
         setupUpdateObserver()
+        setupUpdateDialogObserver()
         checkAppVersion()
     }
     
@@ -124,51 +118,25 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun checkAppVersion() {
+        // Используем UpdateViewModel для проверки обновлений
+        updateViewModel.checkForUpdate()
+    }
+    
+    /**
+     * Наблюдатель за диалогом обновления
+     */
+    private fun setupUpdateDialogObserver() {
         lifecycleScope.launch {
-            try {
-                val repo = ApiRepository()
-                val packageInfo = packageManager.getPackageInfo(packageName, 0)
-                val appVersion = packageInfo.versionName ?: "1.0.0"
-                @Suppress("DEPRECATION")
-                val buildVersion = packageInfo.versionCode
-                val osVersion = android.os.Build.VERSION.RELEASE ?: "unknown"
-                val platform = "android_master"
-                
-                val result = repo.checkAppVersion(
-                    platform = platform,
-                    appVersion = appVersion,
-                    buildVersion = buildVersion,
-                    osVersion = osVersion
-                )
-                
-                result.onSuccess { data ->
-                    if (data.updateRequired) {
-                        // Пытаемся использовать In-App Updates
-                        val inAppUpdateSuccess = updateManager.checkInAppUpdate(
-                            activity = this@MainActivity,
-                            updateLauncher = updateLauncher,
-                            forceUpdate = data.forceUpdate
-                        )
-                        
-                        // Если In-App Updates не сработал, показываем обычный диалог
-                        if (!inAppUpdateSuccess) {
-                            showUpdateDialog(
-                                force = data.forceUpdate,
-                                currentVersion = data.currentVersion,
-                                releaseNotes = data.releaseNotes ?: "",
-                                downloadUrl = data.downloadUrl
-                            )
-                        }
-                    }
-                }.onFailure { e ->
-                    Log.e("MainActivity", "Version check failed: ${e.message}")
+            updateViewModel.uiState.collect { state ->
+                if (state.showUpdateDialog && state.versionInfo != null) {
+                    // Показываем диалог обновления
+                    val dialog = UpdateDialogFragment()
+                    dialog.show(supportFragmentManager, "UpdateDialog")
                 }
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Version check error", e)
             }
         }
     }
-    
+
     /**
      * Наблюдатель за статусом обновлений
      */
@@ -176,12 +144,17 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             updateManager.updateCheckStatus.collect { status ->
                 when (status) {
-                    is UpdateCheckStatus.UpdateDownloaded -> {
-                        // Показываем уведомление о готовности обновления
-                        showUpdateReadyDialog()
+                    is UpdateCheckStatus.UpdateAvailable -> {
+                        // Автоматически начинаем скачивание
+                        updateManager.downloadAndInstall(status.updateInfo.downloadUrl)
                     }
                     is UpdateCheckStatus.Error -> {
                         Log.e("MainActivity", "Update error: ${status.message}")
+                        MaterialAlertDialogBuilder(this@MainActivity)
+                            .setTitle("Ошибка обновления")
+                            .setMessage(status.message)
+                            .setPositiveButton("OK", null)
+                            .show()
                     }
                     else -> {
                         // Другие статусы логируем
@@ -190,71 +163,15 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-    
-    /**
-     * Показать диалог о готовности обновления (для гибких обновлений)
-     */
-    private fun showUpdateReadyDialog() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Обновление готово")
-            .setMessage("Обновление скачано и готово к установке. Перезапустить приложение?")
-            .setPositiveButton("Перезапустить") { _, _ ->
-                updateManager.completeFlexibleUpdate(this)
-            }
-            .setNegativeButton("Позже", null)
-            .show()
-    }
-    
-    override fun onResume() {
-        super.onResume()
-        // Проверяем, не было ли прервано обновление (для гибких обновлений)
+        
+        // Отслеживаем прогресс загрузки
         lifecycleScope.launch {
-            try {
-                updateManager.appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
-                    if (appUpdateInfo.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
-                        showUpdateReadyDialog()
-                    }
+            updateManager.downloadProgress.collect { progress ->
+                progress?.let {
+                    Log.d("MainActivity", "Download progress: ${it.progress}% - ${it.message}")
                 }
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Error checking update status", e)
             }
         }
     }
     
-    private fun showUpdateDialog(
-        force: Boolean,
-        currentVersion: String,
-        releaseNotes: String,
-        downloadUrl: String?
-    ) {
-        val builder = MaterialAlertDialogBuilder(this)
-            .setTitle("Доступно обновление")
-            .setMessage("Новая версия $currentVersion\n\n$releaseNotes")
-        
-        if (force) {
-            builder.setCancelable(false)
-                .setPositiveButton("Обновить") { _, _ ->
-                    openStore(downloadUrl)
-                }
-        } else {
-            builder.setPositiveButton("Обновить") { _, _ ->
-                openStore(downloadUrl)
-            }.setNegativeButton("Позже", null)
-        }
-        
-        builder.show()
-    }
-    
-    private fun openStore(url: String?) {
-        try {
-            val intent = android.content.Intent(
-                android.content.Intent.ACTION_VIEW,
-                android.net.Uri.parse(url ?: "market://details?id=${packageName}")
-            )
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to open store", e)
-        }
-    }
 }

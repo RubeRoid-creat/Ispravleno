@@ -1,17 +1,17 @@
 {
   "android_master": {
-    "current_version": "1.1.9",
+    "current_version": "1.2.5",
     "min_required_version": "1.0.0",
     "force_update": false,
-    "release_notes": "Исправлена кликабельность карточки смены. Добавлено подробное логирование для отладки переключения смены.",
+    "release_notes": "Изменено название приложения на 'исправлено.pro'. Обновлена система обновлений с улучшенным логированием и обработкой ошибок.",
     "download_url": "https://ispravleno.pro/apps/masterprofi-master.apk",
     "supported_os_versions": ["8.0", "9.0", "10", "11", "12", "13"]
   },
   "android_client": {
-    "current_version": "1.0.0",
+    "current_version": "1.0.5",
     "min_required_version": "1.0.0",
     "force_update": false,
-    "release_notes": "Первый релиз клиента.",
+    "release_notes": "Обновлена иконка приложения с улучшенным логотипом. Белый фон для лучшего контраста. Улучшена видимость элементов иконки. Исправлена система обновлений с детальным логированием.",
     "download_url": "https://ispravleno.pro/apps/masterprofi-client.apk",
     "supported_os_versions": ["8.0", "9.0", "10", "11", "12", "13"]
   }

@@ -4,7 +4,9 @@ import com.google.gson.annotations.SerializedName
 
 data class VersionCheckRequest(
     val platform: String = "android_client",
-    @SerializedName("app_version") val appVersion: String
+    @SerializedName("app_version") val appVersion: String,
+    @SerializedName("build_version") val buildVersion: Int? = null,
+    @SerializedName("os_version") val osVersion: String? = null
 )
 
 data class VersionCheckResponse(

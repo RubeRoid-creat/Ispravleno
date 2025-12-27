@@ -1,6 +1,42 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+
+interface VersionInfo {
+  current_version: string
+  min_required_version: string
+  force_update: boolean
+  release_notes: string
+  download_url: string
+  supported_os_versions: string[]
+}
+
+interface VersionConfig {
+  android_master: VersionInfo
+  android_client: VersionInfo
+}
 
 export default function AppsPage() {
+  const [versionConfig, setVersionConfig] = useState<VersionConfig | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchVersionConfig = async () => {
+      try {
+        const response = await fetch('/api/version/config')
+        const data = await response.json()
+        setVersionConfig(data)
+      } catch (error) {
+        console.error('Ошибка загрузки информации о версиях:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchVersionConfig()
+  }, [])
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -23,6 +59,30 @@ export default function AppsPage() {
               <span className="text-white text-5xl">🔧</span>
             </div>
             <h2 className="text-3xl font-bold text-[#1a1a1a] mb-4 text-center">Для мастеров</h2>
+            
+            {/* Информация о версии */}
+            {versionConfig?.android_master && (
+              <div className="mb-4 text-center">
+                <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-lg">
+                  <span className="text-sm text-gray-600">Версия:</span>
+                  <span className="font-semibold text-[#1a1a1a]">
+                    {versionConfig.android_master.current_version}
+                  </span>
+                  {versionConfig.android_master.force_update && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      Обновление обязательно
+                    </span>
+                  )}
+                </div>
+                {versionConfig.android_master.release_notes && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
+                    <p className="font-medium mb-1">Что нового:</p>
+                    <p>{versionConfig.android_master.release_notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <p className="text-gray-600 mb-8 text-center leading-relaxed">
               Управляйте заказами, общайтесь с клиентами и отслеживайте свой график работы.
               Все инструменты для эффективной работы мастера в одном приложении.
@@ -33,7 +93,7 @@ export default function AppsPage() {
                 download
                 className="block w-full bg-black text-white py-4 rounded-lg hover:bg-gray-800 transition font-medium text-center"
               >
-                Скачать для Android
+                {loading ? 'Загрузка...' : 'Скачать для Android'}
               </a>
               <a
                 href="/apps/master.ipa"
@@ -51,6 +111,30 @@ export default function AppsPage() {
               <span className="text-white text-5xl">📱</span>
             </div>
             <h2 className="text-3xl font-bold text-[#1a1a1a] mb-4 text-center">Для клиентов</h2>
+            
+            {/* Информация о версии */}
+            {versionConfig?.android_client && (
+              <div className="mb-4 text-center">
+                <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-lg">
+                  <span className="text-sm text-gray-600">Версия:</span>
+                  <span className="font-semibold text-[#1a1a1a]">
+                    {versionConfig.android_client.current_version}
+                  </span>
+                  {versionConfig.android_client.force_update && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      Обновление обязательно
+                    </span>
+                  )}
+                </div>
+                {versionConfig.android_client.release_notes && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
+                    <p className="font-medium mb-1">Что нового:</p>
+                    <p>{versionConfig.android_client.release_notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <p className="text-gray-600 mb-8 text-center leading-relaxed">
               Создавайте заказы, отслеживайте статус ремонта, общайтесь с мастерами
               и получайте уведомления о готовности заказа.
@@ -61,7 +145,7 @@ export default function AppsPage() {
                 download
                 className="block w-full bg-black text-white py-4 rounded-lg hover:bg-gray-800 transition font-medium text-center"
               >
-                Скачать для Android
+                {loading ? 'Загрузка...' : 'Скачать для Android'}
               </a>
               <a
                 href="/apps/client.ipa"

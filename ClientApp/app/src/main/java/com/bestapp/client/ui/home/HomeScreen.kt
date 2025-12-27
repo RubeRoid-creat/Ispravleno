@@ -1,5 +1,6 @@
 package com.bestapp.client.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,6 +21,7 @@ import com.bestapp.client.R
 import com.bestapp.client.ui.navigation.Screen
 import com.bestapp.client.ui.theme.*
 import com.bestapp.client.ui.promotions.PromotionItem
+import androidx.compose.ui.graphics.Color as ComposeColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +34,19 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Привет, ${uiState.userName}!") },
+                title = { 
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo_ispravleno_icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text("Привет, ${uiState.userName}!")
+                    }
+                },
                 actions = {
                     IconButton(onClick = { navController.navigate(Screen.Notifications.route) }) {
                         Icon(Icons.Default.Notifications, contentDescription = "Уведомления")
@@ -487,12 +502,19 @@ fun OrderCard(order: com.bestapp.client.data.api.models.OrderDto, onClick: () ->
 
 @Composable
 fun StatusChip(status: String) {
-    val (color, text) = when (status) {
-        "new" -> StatusNew to "Новый"
-        "in_progress" -> StatusInProgress to "В работе"
-        "completed" -> StatusCompleted to "Завершён"
-        "cancelled" -> StatusCancelled to "Отменён"
-        else -> StatusNew to status
+    val color = when (status) {
+        "new" -> ComposeColor(0xFF4CAF50)
+        "in_progress" -> ComposeColor(0xFFFF9800)
+        "completed" -> ComposeColor(0xFF9C27B0)
+        "cancelled" -> ComposeColor(0xFFF44336)
+        else -> ComposeColor(0xFF4CAF50)
+    }
+    val text = when (status) {
+        "new" -> "Новый"
+        "in_progress" -> "В работе"
+        "completed" -> "Завершён"
+        "cancelled" -> "Отменён"
+        else -> status
     }
     
     Surface(
@@ -503,7 +525,7 @@ fun StatusChip(status: String) {
             text = text,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = OnPrimary
+            color = ComposeColor(0xFFFFFFFF)
         )
     }
 }

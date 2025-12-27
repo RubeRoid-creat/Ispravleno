@@ -1,3 +1,26 @@
+#!/bin/bash
+
+# Скрипт для обновления конфигурации nginx для совместимости с Яндекс браузером
+# Запустите на сервере: sudo bash update-nginx-yandex-fix.sh
+
+echo "🔧 Обновление конфигурации nginx для совместимости с Яндекс браузером..."
+
+# Путь к конфигурации
+CONFIG_FILE="/etc/nginx/sites-available/ispravleno-website"
+
+# Проверка существования файла
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "❌ Файл конфигурации не найден: $CONFIG_FILE"
+    exit 1
+fi
+
+# Создание резервной копии
+BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+sudo cp "$CONFIG_FILE" "$BACKUP_FILE"
+echo "✓ Создана резервная копия: $BACKUP_FILE"
+
+# Обновление конфигурации
+sudo tee "$CONFIG_FILE" > /dev/null <<'EOF'
 server {
     listen 443 ssl http2;
     ssl_certificate /etc/letsencrypt/live/ispravleno.pro/fullchain.pem;
@@ -113,3 +136,25 @@ server {
     server_name ispravleno.pro www.ispravleno.pro;
     return 404;
 }
+EOF
+
+echo "✓ Конфигурация обновлена"
+
+# Проверка конфигурации
+echo ""
+echo "🔍 Проверка конфигурации..."
+if sudo nginx -t; then
+    echo "✓ Конфигурация корректна"
+    echo ""
+    echo "🔄 Перезагрузка nginx..."
+    sudo systemctl reload nginx
+    echo "✅ Nginx перезагружен успешно!"
+    echo ""
+    echo "📝 Проверьте сайт в Яндекс браузере: https://ispravleno.pro"
+else
+    echo "❌ Ошибка в конфигурации!"
+    echo "Восстановление из резервной копии..."
+    sudo cp "$BACKUP_FILE" "$CONFIG_FILE"
+    echo "✓ Конфигурация восстановлена из резервной копии"
+    exit 1
+fi

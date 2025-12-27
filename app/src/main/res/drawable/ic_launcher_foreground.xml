@@ -5,27 +5,45 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     
-    <!-- Безопасная зона начинается с 18dp, центр 54x54 -->
+    <!-- Основной черный квадрат с закругленными углами (фон иконки) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M9,9 L99,9 Q108,9 108,18 L108,90 Q108,99 99,99 L9,99 Q0,99 0,90 L0,18 Q0,9 9,9 Z" />
+    
+    <!-- Гаечный ключ (белый) - центр 54x54 -->
     <group
         android:translateX="54"
         android:translateY="54">
-        
-        <!-- Гаечный ключ - основа -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M-6,-22 L-6,-14 L-4,-14 L-4,-10 L6,-10 L6,-14 L8,-14 L8,-22 L12,-22 L12,22 L8,22 L8,14 L6,14 L6,10 L-4,10 L-4,14 L-6,14 L-6,22 L-10,22 L-10,-22 Z" />
+            android:pathData="M-12,-18 L-12,-12 L-10,-12 L-10,-8 L10,-8 L10,-12 L12,-12 L12,-18 L16,-18 L16,18 L12,18 L12,12 L10,12 L10,8 L-10,8 L-10,12 L-12,12 L-12,18 L-16,18 L-16,-18 Z" />
         
-        <!-- Шестигранная головка ключа -->
+        <!-- Детали гаечного ключа -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M1,-5 L4,-2 L4,2 L1,5 L-1,5 L-4,2 L-4,-2 L-1,-5 Z" />
-        
-        <!-- Галочка "исправлено" -->
+            android:pathData="M-6,-10 L-2,-10 L-2,-6 L-6,-6 Z" />
         <path
-            android:strokeColor="#00E676"
-            android:strokeWidth="3"
+            android:fillColor="#FFFFFF"
+            android:pathData="M2,-10 L6,-10 L6,-6 L2,-6 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M-6,6 L-2,6 L2,10 L-2,10 Z" />
+    </group>
+    
+    <!-- Галочка в белом кружке (справа сверху) -->
+    <group
+        android:translateX="76"
+        android:translateY="12">
+        <!-- Белый круг -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M0,0 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0" />
+        <!-- Черная галочка -->
+        <path
+            android:strokeColor="#000000"
+            android:strokeWidth="2.5"
             android:strokeLineCap="round"
             android:strokeLineJoin="round"
-            android:pathData="M-3,0 L0,3 L4,-1" />
+            android:pathData="M-3,0 L0,3 L3,-1.5" />
     </group>
 </vector>

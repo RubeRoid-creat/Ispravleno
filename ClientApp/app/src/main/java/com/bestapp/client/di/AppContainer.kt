@@ -100,7 +100,7 @@ object AppContainer {
     
     // ApiRepository
     val apiRepository: ApiRepository by lazy {
-        ApiRepository(apiService, preferencesManager)
+        ApiRepository(apiService, preferencesManager, appContext)
     }
     
     // WebSocketService

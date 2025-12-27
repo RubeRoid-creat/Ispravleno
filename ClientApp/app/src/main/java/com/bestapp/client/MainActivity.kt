@@ -18,7 +18,6 @@ import com.bestapp.client.ui.theme.BestAppClientTheme
 import com.bestapp.client.ui.update.UpdateDialog
 import com.bestapp.client.ui.update.UpdateViewModel
 import com.yandex.mapkit.MapKitFactory
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     
@@ -110,5 +109,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    
 }
 

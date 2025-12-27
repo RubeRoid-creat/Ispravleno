@@ -45,3 +45,6 @@ backend/admin-panel/dist/
 backend/admin-panel/build/
 
 backend/public/updates/*.apk
+
+# APK files in root directory
+*.apk

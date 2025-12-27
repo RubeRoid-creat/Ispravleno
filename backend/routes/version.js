@@ -29,8 +29,11 @@ function isVersionLess(v1, v2) {
 
 function loadVersionConfig() {
   try {
+    console.log('[loadVersionConfig] Reading from:', configPath);
     const raw = readFileSync(configPath, 'utf-8');
-    return JSON.parse(raw);
+    const config = JSON.parse(raw);
+    console.log('[loadVersionConfig] Loaded version:', config.android_master?.current_version || 'N/A');
+    return config;
   } catch (e) {
     console.error('Ошибка чтения version-config.json:', e.message);
     return {};
@@ -40,9 +43,9 @@ function loadVersionConfig() {
 // Проверка версии приложения (публичный эндпоинт)
 router.post('/check', (req, res) => {
   try {
-    const { platform = 'android_master', app_version } = req.body || {};
+    const { platform = 'android_master', app_version, build_version, os_version } = req.body || {};
     
-    console.log('[POST /api/version/check] body =', req.body);
+    console.log('[POST /api/version/check] body =', JSON.stringify(req.body));
     
     if (!app_version) {
       return res.status(400).json({ error: 'app_version is required' });
@@ -53,6 +56,7 @@ router.post('/check', (req, res) => {
     const versionConfig = config[platform] || config['android_client'] || config['android_master'];
     
     if (!versionConfig) {
+      console.log('[POST /api/version/check] No config found for platform:', platform);
       // Нет конфига — считаем, что обновление не требуется
       return res.json({
         update_required: false,
@@ -71,6 +75,13 @@ router.post('/check', (req, res) => {
     // Обновление требуется, если текущая версия приложения меньше версии на сервере
     const updateRequired = isVersionLess(app_version, currentVersion);
     
+    console.log('[POST /api/version/check] Version comparison:', {
+      app_version,
+      currentVersion,
+      updateRequired,
+      platform
+    });
+    
     const response = {
       update_required: updateRequired,
       force_update: forceUpdate,
@@ -80,7 +91,7 @@ router.post('/check', (req, res) => {
       supported: true
     };
     
-    console.log('[POST /api/version/check] response =', response);
+    console.log('[POST /api/version/check] response =', JSON.stringify(response));
     res.json(response);
   } catch (error) {
     console.error('Ошибка /api/version/check:', error);

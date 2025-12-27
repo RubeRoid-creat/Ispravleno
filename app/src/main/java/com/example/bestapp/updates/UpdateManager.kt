@@ -1,20 +1,15 @@
 package com.example.bestapp.updates
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.example.bestapp.BuildConfig
 import com.example.bestapp.api.ApiRepository
-import com.google.android.play.core.appupdate.AppUpdateInfo
-import com.google.android.play.core.appupdate.AppUpdateManager
-import com.google.android.play.core.appupdate.AppUpdateManagerFactory
-import com.google.android.play.core.appupdate.AppUpdateOptions
-import com.google.android.play.core.install.model.AppUpdateType
-import com.google.android.play.core.install.model.UpdateAvailability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,19 +17,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
+import java.util.concurrent.TimeUnit
 
 /**
  * Менеджер обновлений приложения
- * Поддерживает:
- * - Проверку версий через API
- * - Автоматическое скачивание APK
- * - Установку обновлений
- * - Google Play In-App Updates (опционально)
+ * Скачивает и устанавливает APK напрямую с сервера
  */
 class UpdateManager(
     private val context: Context,
@@ -43,23 +35,17 @@ class UpdateManager(
     companion object {
         private const val TAG = "UpdateManager"
         private const val UPDATE_FILE_NAME = "app-update.apk"
-        private const val REQUEST_CODE_UPDATE = 1001
     }
 
     private val apiRepository = ApiRepository()
-    val appUpdateManager: AppUpdateManager = AppUpdateManagerFactory.create(context)
-
-    // Информация об обновлении
-    private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
-    val updateInfo: StateFlow<UpdateInfo?> = _updateInfo.asStateFlow()
-
-    // Прогресс скачивания
-    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
-    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
 
     // Статус проверки обновлений
     private val _updateCheckStatus = MutableStateFlow<UpdateCheckStatus>(UpdateCheckStatus.Idle)
     val updateCheckStatus: StateFlow<UpdateCheckStatus> = _updateCheckStatus.asStateFlow()
+
+    // Прогресс скачивания (только для In-App Updates)
+    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
+    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
 
     /**
      * Проверить наличие обновлений
@@ -84,21 +70,18 @@ class UpdateManager(
                     val updateRequired = response.updateRequired
                     val forceUpdate = response.forceUpdate
                     val newVersion = response.currentVersion
-                    val releaseNotes = response.releaseNotes
                     val downloadUrl = response.downloadUrl
 
                     Log.d(TAG, "Update required: $updateRequired, force: $forceUpdate")
                     Log.d(TAG, "New version: $newVersion, URL: $downloadUrl")
 
-                    if (updateRequired && newVersion != null) {
+                    if (updateRequired && downloadUrl != null) {
                         val updateInfo = UpdateInfo(
                             currentVersion = currentVersion,
-                            newVersion = newVersion,
+                            newVersion = newVersion ?: "unknown",
                             forceUpdate = forceUpdate,
-                            releaseNotes = releaseNotes ?: "Доступно новое обновление",
                             downloadUrl = downloadUrl
                         )
-                        _updateInfo.value = updateInfo
                         _updateCheckStatus.value = UpdateCheckStatus.UpdateAvailable(updateInfo)
                         Log.d(TAG, "✅ Доступно обновление: $currentVersion -> $newVersion")
                     } else {
@@ -153,44 +136,116 @@ class UpdateManager(
      */
     private suspend fun downloadApk(downloadUrl: String): File? = withContext(Dispatchers.IO) {
         try {
-            val url = URL(downloadUrl)
-            val connection = url.openConnection()
-            connection.connect()
-
-            val fileLength = connection.contentLength
-            val inputStream = connection.getInputStream()
+            Log.d(TAG, "🚀 Начало загрузки APK: $downloadUrl")
+            
+            // Используем OkHttp для более надежной загрузки
+            val client = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .build()
+            
+            val request = Request.Builder()
+                .url(downloadUrl)
+                .get()
+                .build()
+            
+            Log.d(TAG, "📡 Отправка запроса на загрузку...")
+            val response = client.newCall(request).execute()
+            
+            if (!response.isSuccessful) {
+                Log.e(TAG, "❌ Ошибка загрузки: ${response.code} ${response.message}")
+                throw Exception("Ошибка загрузки: ${response.code} ${response.message}")
+            }
+            
+            val fileLength = response.body?.contentLength() ?: -1L
+            Log.d(TAG, "📦 Размер файла: $fileLength bytes")
+            
+            val body = response.body ?: throw Exception("Тело ответа пустое")
+            val inputStream = body.byteStream()
 
             // Сохраняем во внутреннее хранилище
             val outputFile = File(context.cacheDir, UPDATE_FILE_NAME)
+            // Удаляем старый файл, если есть
+            if (outputFile.exists()) {
+                outputFile.delete()
+                Log.d(TAG, "🗑️ Удален старый файл обновления")
+            }
+            
             val outputStream = FileOutputStream(outputFile)
 
-            val buffer = ByteArray(4096)
+            val buffer = ByteArray(8192) // Увеличиваем размер буфера
             var total: Long = 0
             var count: Int
+            var lastProgress = 0
 
+            Log.d(TAG, "⬇️ Начало скачивания...")
             while (inputStream.read(buffer).also { count = it } != -1) {
                 total += count
                 outputStream.write(buffer, 0, count)
 
-                // Обновляем прогресс
+                // Обновляем прогресс (не чаще чем каждые 1%)
                 if (fileLength > 0) {
                     val progress = (total * 100 / fileLength).toInt()
-                    _downloadProgress.value = DownloadProgress(
-                        progress,
-                        "Загрузка: ${total / 1024 / 1024} MB / ${fileLength / 1024 / 1024} MB"
-                    )
+                    if (progress > lastProgress + 1 || progress == 100) {
+                        _downloadProgress.value = DownloadProgress(
+                            progress,
+                            "Загрузка: ${total / 1024 / 1024} MB / ${fileLength / 1024 / 1024} MB"
+                        )
+                        lastProgress = progress
+                        Log.d(TAG, "📊 Прогресс: $progress% ($total / $fileLength bytes)")
+                    }
                 }
             }
 
             outputStream.flush()
             outputStream.close()
             inputStream.close()
+            body.close()
 
-            Log.d(TAG, "✅ APK скачан: ${outputFile.absolutePath} (${outputFile.length()} bytes)")
+            val finalSize = outputFile.length()
+            Log.d(TAG, "✅ APK скачан: ${outputFile.absolutePath} ($finalSize bytes)")
+            
+            if (finalSize == 0L) {
+                throw Exception("Загруженный файл пуст")
+            }
+            
+            if (fileLength > 0 && finalSize != fileLength) {
+                Log.w(TAG, "⚠️ Размер файла не совпадает: ожидалось $fileLength, получено $finalSize")
+            }
+            
             outputFile
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Ошибка скачивания APK", e)
+            Log.e(TAG, "❌ Ошибка скачивания APK: ${e.message}", e)
             null
+        }
+    }
+
+    /**
+     * Проверить разрешение на установку APK (Android 8.0+)
+     */
+    fun canInstallPackages(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.packageManager.canRequestPackageInstalls()
+        } else {
+            true
+        }
+    }
+
+    /**
+     * Открыть настройки для разрешения установки из неизвестных источников
+     */
+    fun requestInstallPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Ошибка открытия настроек установки", e)
+            }
         }
     }
 
@@ -199,163 +254,62 @@ class UpdateManager(
      */
     private fun installApk(apkFile: File) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-
+            Log.d(TAG, "🚀 Начало установки APK: ${apkFile.absolutePath}")
+            Log.d(TAG, "📦 Файл существует: ${apkFile.exists()}, размер: ${apkFile.length()} bytes")
+            
+            // Проверяем разрешение на установку для Android 8.0+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !canInstallPackages()) {
+                Log.w(TAG, "⚠️ Нет разрешения на установку пакетов")
+                _updateCheckStatus.value = UpdateCheckStatus.Error("Требуется разрешение на установку из неизвестных источников")
+                requestInstallPermission()
+                return
+            }
+            
             val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 // Android 7.0+ требует FileProvider
-                FileProvider.getUriForFile(
+                val fileProviderUri = FileProvider.getUriForFile(
                     context,
                     "${context.packageName}.fileprovider",
                     apkFile
                 )
+                Log.d(TAG, "📎 FileProvider URI: $fileProviderUri")
+                fileProviderUri
             } else {
-                Uri.fromFile(apkFile)
+                val fileUri = Uri.fromFile(apkFile)
+                Log.d(TAG, "📎 File URI: $fileUri")
+                fileUri
             }
 
-            intent.setDataAndType(uri, "application/vnd.android.package-archive")
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                
+                // Для Android 8.0+ нужно явно разрешить установку
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                }
+            }
 
-            Log.d(TAG, "🚀 Запуск установки APK")
-            context.startActivity(intent)
+            // Проверяем, есть ли приложение для установки
+            val packageManager = context.packageManager
+            if (intent.resolveActivity(packageManager) != null) {
+                Log.d(TAG, "✅ Найдено приложение для установки")
+                context.startActivity(intent)
+                Log.d(TAG, "✅ Intent установки запущен")
+            } else {
+                Log.e(TAG, "❌ Не найдено приложение для установки APK")
+                _updateCheckStatus.value = UpdateCheckStatus.Error("Не найдено приложение для установки. Разрешите установку из неизвестных источников в настройках.")
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "❌ Ошибка безопасности при установке APK", e)
+            _updateCheckStatus.value = UpdateCheckStatus.Error("Ошибка безопасности: ${e.message}. Разрешите установку из неизвестных источников.")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                requestInstallPermission()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "❌ Ошибка установки APK", e)
             _updateCheckStatus.value = UpdateCheckStatus.Error("Ошибка установки: ${e.message}")
-        }
-    }
-
-    /**
-     * Проверить обновления через Google Play In-App Updates
-     * @param activity Activity для запуска обновления
-     * @param updateLauncher ActivityResultLauncher для обработки результата
-     * @param forceUpdate Если true - использует IMMEDIATE режим, иначе FLEXIBLE
-     */
-    suspend fun checkInAppUpdate(
-        activity: Activity, 
-        updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>,
-        forceUpdate: Boolean = false
-    ): Boolean {
-        return suspendCancellableCoroutine { continuation ->
-            try {
-                appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
-                    val updateAvailability = appUpdateInfo.updateAvailability()
-                    val isUpdateAvailable = updateAvailability == UpdateAvailability.UPDATE_AVAILABLE
-                    val isImmediateUpdateAllowed = appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
-                    val isFlexibleUpdateAllowed = appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-
-                    Log.d(TAG, "Update availability: $updateAvailability")
-                    Log.d(TAG, "Immediate allowed: $isImmediateUpdateAllowed, Flexible allowed: $isFlexibleUpdateAllowed")
-
-                    if (isUpdateAvailable) {
-                        if (forceUpdate && isImmediateUpdateAllowed) {
-                            // Немедленное обновление (блокирующее)
-                            startImmediateUpdate(appUpdateInfo, updateLauncher)
-                            continuation.resume(true)
-                        } else if (isFlexibleUpdateAllowed) {
-                            // Гибкое обновление (в фоне)
-                            startFlexibleUpdate(appUpdateInfo, updateLauncher)
-                            continuation.resume(true)
-                        } else {
-                            // Fallback на обычное обновление
-                            openGooglePlay()
-                            continuation.resume(false)
-                        }
-                    } else {
-                        Log.d(TAG, "Нет доступных обновлений")
-                        continuation.resume(false)
-                    }
-                }.addOnFailureListener { error ->
-                    Log.e(TAG, "Ошибка проверки In-App Update", error)
-                    continuation.resume(false)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Ошибка инициализации In-App Update", e)
-                continuation.resume(false)
-            }
-        }
-    }
-
-    /**
-     * Запустить немедленное обновление (блокирующее)
-     * @param updateLauncher ActivityResultLauncher для обработки результата
-     */
-    fun startImmediateUpdate(
-        appUpdateInfo: AppUpdateInfo, 
-        updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>
-    ) {
-        try {
-            val options = AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build()
-            appUpdateManager.startUpdateFlowForResult(appUpdateInfo, updateLauncher, options)
-            Log.d(TAG, "🚀 Запущено немедленное обновление")
-        } catch (e: Exception) {
-            Log.e(TAG, "Ошибка запуска немедленного обновления", e)
-            openGooglePlay()
-        }
-    }
-
-    /**
-     * Запустить гибкое обновление (в фоне)
-     * @param updateLauncher ActivityResultLauncher для обработки результата
-     */
-    fun startFlexibleUpdate(
-        appUpdateInfo: AppUpdateInfo, 
-        updateLauncher: androidx.activity.result.ActivityResultLauncher<androidx.activity.result.IntentSenderRequest>
-    ) {
-        try {
-            val options = AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
-            appUpdateManager.startUpdateFlowForResult(appUpdateInfo, updateLauncher, options)
-            Log.d(TAG, "🔄 Запущено гибкое обновление в фоне")
-            
-            // Слушаем прогресс обновления
-            appUpdateManager.registerListener { state ->
-                val bytesDownloaded = state.bytesDownloaded()
-                val totalBytesToDownload = state.totalBytesToDownload()
-                
-                if (totalBytesToDownload > 0) {
-                    val progress = ((bytesDownloaded * 100) / totalBytesToDownload).toInt()
-                    _downloadProgress.value = DownloadProgress(
-                        progress,
-                        "Загрузка обновления: ${progress}%"
-                    )
-                    Log.d(TAG, "Прогресс обновления: $progress%")
-                }
-                
-                // Когда обновление готово, показываем уведомление
-                if (state.installStatus() == com.google.android.play.core.install.model.InstallStatus.DOWNLOADED) {
-                    _updateCheckStatus.value = UpdateCheckStatus.UpdateDownloaded
-                    Log.d(TAG, "✅ Обновление скачано, готово к установке")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Ошибка запуска гибкого обновления", e)
-            openGooglePlay()
-        }
-    }
-
-    /**
-     * Завершить установку гибкого обновления (после перезапуска)
-     */
-    fun completeFlexibleUpdate(activity: Activity) {
-        appUpdateManager.completeUpdate()
-        Log.d(TAG, "🔄 Завершение установки обновления")
-    }
-
-    /**
-     * Открыть страницу приложения в Google Play
-     */
-    fun openGooglePlay() {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("market://details?id=${context.packageName}")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            // Если Google Play не установлен, открываем в браузере
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
         }
     }
 
@@ -364,21 +318,9 @@ class UpdateManager(
      */
     fun resetStatus() {
         _updateCheckStatus.value = UpdateCheckStatus.Idle
-        _updateInfo.value = null
         _downloadProgress.value = null
     }
 }
-
-/**
- * Информация об обновлении
- */
-data class UpdateInfo(
-    val currentVersion: String,
-    val newVersion: String,
-    val forceUpdate: Boolean,
-    val releaseNotes: String,
-    val downloadUrl: String?
-)
 
 /**
  * Прогресс загрузки
@@ -389,6 +331,16 @@ data class DownloadProgress(
 )
 
 /**
+ * Информация об обновлении
+ */
+data class UpdateInfo(
+    val currentVersion: String,
+    val newVersion: String,
+    val forceUpdate: Boolean,
+    val downloadUrl: String
+)
+
+/**
  * Статус проверки обновлений
  */
 sealed class UpdateCheckStatus {
@@ -396,6 +348,5 @@ sealed class UpdateCheckStatus {
     object Checking : UpdateCheckStatus()
     object NoUpdateAvailable : UpdateCheckStatus()
     data class UpdateAvailable(val updateInfo: UpdateInfo) : UpdateCheckStatus()
-    object UpdateDownloaded : UpdateCheckStatus() // Для гибких обновлений
     data class Error(val message: String) : UpdateCheckStatus()
 }

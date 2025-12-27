@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    
+    <!-- Основной черный квадрат с закругленными углами -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M10,10 L110,10 Q120,10 120,20 L120,100 Q120,110 110,110 L10,110 Q0,110 0,100 L0,20 Q0,10 10,10 Z" />
+    
+    <!-- Гаечный ключ (белый) - точная копия с сайта -->
+    <group
+        android:translateX="60"
+        android:translateY="60"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M-18,-10 L-18,-5 L-15,-5 L-15,-2 L15,-2 L15,-5 L18,-5 L18,-10 L22,-10 L22,10 L18,10 L18,5 L15,5 L15,8 L-15,8 L-15,5 L-18,5 L-18,10 L-22,10 L-22,-10 Z" />
+        
+        <!-- Детали гаечного ключа -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M-10,-15 L-5,-15 L-5,-12 L-10,-12 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M5,-15 L10,-15 L10,-12 L5,-12 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M-10,12 L-5,12 L-2,15 L-5,15 Z" />
+    </group>
+    
+    <!-- Галочка в белом кружке (справа сверху) -->
+    <group
+        android:translateX="95"
+        android:translateY="15">
+        <!-- Белый круг -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M0,0 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0" />
+        <!-- Черная галочка -->
+        <path
+            android:strokeColor="#000000"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M-4,0 L0,4 L4,-2" />
+    </group>
+</vector>

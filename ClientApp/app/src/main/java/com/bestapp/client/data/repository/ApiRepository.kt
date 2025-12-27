@@ -1,5 +1,9 @@
 package com.bestapp.client.data.repository
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
 import com.bestapp.client.data.api.ApiService
 import com.bestapp.client.data.api.models.*
 import com.bestapp.client.data.local.PreferencesManager
@@ -12,7 +16,8 @@ sealed class ApiResult<out T> {
 
 class ApiRepository(
     private val apiService: ApiService,
-    private val prefsManager: PreferencesManager
+    private val prefsManager: PreferencesManager,
+    private val context: Context? = null
 ) {
     
     // Общий метод для обработки HTTP ошибок
@@ -275,17 +280,35 @@ class ApiRepository(
     // Version check
     suspend fun checkVersion(appVersion: String): ApiResult<com.bestapp.client.data.api.models.VersionCheckResponse> {
         return try {
+            val buildVersion = context?.let { ctx ->
+                try {
+                    @Suppress("DEPRECATION")
+                    ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionCode
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            val osVersion = Build.VERSION.RELEASE ?: "unknown"
+            
+            Log.d("ApiRepository", "Checking version: appVersion=$appVersion, buildVersion=$buildVersion, osVersion=$osVersion")
+            
             val request = com.bestapp.client.data.api.models.VersionCheckRequest(
                 platform = "android_client",
-                appVersion = appVersion
+                appVersion = appVersion,
+                buildVersion = buildVersion,
+                osVersion = osVersion
             )
             val response = apiService.checkVersion(request)
             if (response.isSuccessful && response.body() != null) {
-                ApiResult.Success(response.body()!!)
+                val versionResponse = response.body()!!
+                Log.d("ApiRepository", "Version check response: updateRequired=${versionResponse.updateRequired}, currentVersion=${versionResponse.currentVersion}")
+                ApiResult.Success(versionResponse)
             } else {
+                Log.e("ApiRepository", "Version check failed: ${response.code()}, ${response.message()}")
                 handleErrorResponse(response, "Ошибка проверки версии")
             }
         } catch (e: Exception) {
+            Log.e("ApiRepository", "Version check error", e)
             ApiResult.Error(e.message ?: "Неизвестная ошибка")
         }
     }
