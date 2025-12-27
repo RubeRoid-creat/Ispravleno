@@ -48,8 +48,8 @@ NEXT_PUBLIC_ADMIN_API_URL="http://212.74.227.208:3000/api"
 # Сайт URL (важно: порт 3002!)
 NEXT_PUBLIC_SITE_URL="http://212.74.227.208:3002"
 
-# Порт для запуска (важно: 3002!)
-PORT=3002
+# Порт для запуска (важно: 3003!)
+PORT=3003
 
 # Node Environment
 NODE_ENV=production
