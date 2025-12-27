@@ -8,10 +8,10 @@
     "supported_os_versions": ["8.0", "9.0", "10", "11", "12", "13"]
   },
   "android_client": {
-    "current_version": "1.0.5",
+    "current_version": "1.0.6",
     "min_required_version": "1.0.0",
     "force_update": false,
-    "release_notes": "Обновлена иконка приложения с улучшенным логотипом. Белый фон для лучшего контраста. Улучшена видимость элементов иконки. Исправлена система обновлений с детальным логированием.",
+    "release_notes": "Новая яркая иконка приложения! Синий фон с белым ключом и галочкой. Настроена release-подпись для стабильных обновлений.",
     "download_url": "https://ispravleno.pro/apps/masterprofi-client.apk",
     "supported_os_versions": ["8.0", "9.0", "10", "11", "12", "13"]
   }
