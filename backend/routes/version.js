@@ -88,6 +88,39 @@ router.post('/check', (req, res) => {
   }
 });
 
+// Получить конфигурацию версий (для админ-панели)
+router.get('/config', (req, res) => {
+  try {
+    const config = loadVersionConfig();
+    res.json(config);
+  } catch (error) {
+    console.error('Ошибка /api/version/config:', error);
+    res.status(500).json({ error: 'Ошибка получения конфигурации версий' });
+  }
+});
+
+// Обновить конфигурацию версий (для админ-панели, требует авторизации)
+router.put('/config', (req, res) => {
+  try {
+    // TODO: Добавить проверку авторизации администратора
+    const newConfig = req.body;
+    
+    if (!newConfig || typeof newConfig !== 'object') {
+      return res.status(400).json({ error: 'Некорректная конфигурация' });
+    }
+    
+    const success = saveVersionConfig(newConfig);
+    if (success) {
+      res.json({ message: 'Конфигурация обновлена', config: newConfig });
+    } else {
+      res.status(500).json({ error: 'Ошибка сохранения конфигурации' });
+    }
+  } catch (error) {
+    console.error('Ошибка /api/version/config (PUT):', error);
+    res.status(500).json({ error: 'Ошибка обновления конфигурации версий' });
+  }
+});
+
 export default router;
 
 
