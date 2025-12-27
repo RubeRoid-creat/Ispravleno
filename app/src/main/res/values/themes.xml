@@ -14,7 +14,7 @@
         <item name="itemTextAppearanceInactive">@style/CompactBottomNavText</item>
     </style>
     
-    <style name="CompactBottomNavText" parent="TextAppearance.Material3.Caption">
+    <style name="CompactBottomNavText" parent="TextAppearance.AppCompat.Caption">
         <item name="android:textSize">11sp</item>
         <item name="android:textAllCaps">false</item>
     </style>
