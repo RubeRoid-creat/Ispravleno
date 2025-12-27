@@ -25,6 +25,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bestapp.client.ui.reviews.ReviewViewModel
 import com.bestapp.client.ui.orders.OrderStatusTracker
 import com.bestapp.client.ui.orders.CompleteOrderDialog
+import com.bestapp.client.ui.orders.RepairDescriptionParser
+import com.bestapp.client.ui.orders.RepairWorksAndPartsCard
 import com.bestapp.client.di.AppContainer
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -313,11 +315,69 @@ fun OrderDetailsScreen(
                                 )
                             }
                             
-                            Text(
-                                text = order.problemDescription,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
+                            // Парсим описание проблемы для извлечения работ и запчастей
+                            val parsedDescription = remember(order.problemDescription) {
+                                RepairDescriptionParser.parseDescription(order.problemDescription)
+                            }
+                            
+                            // Отображаем базовое описание проблемы (без структурированных данных)
+                            val baseDescription = if (parsedDescription.originalDescription != null) {
+                                parsedDescription.originalDescription
+                            } else if (parsedDescription.additionalComments != null) {
+                                // Если есть только дополнительные комментарии, показываем их
+                                parsedDescription.additionalComments
+                            } else {
+                                // Если есть структурированные данные, показываем только краткое описание
+                                order.problemDescription
+                                    .lines()
+                                    .takeWhile { 
+                                        !it.contains("Выполненные работы:", ignoreCase = true) &&
+                                        !it.contains("Использованные запчасти:", ignoreCase = true) &&
+                                        !it.contains("Предполагаемые работы:", ignoreCase = true) &&
+                                        !it.contains("Предполагаемые запчасти:", ignoreCase = true) &&
+                                        !it.contains("Дополнительно:", ignoreCase = true)
+                                    }
+                                    .joinToString("\n")
+                                    .trim()
+                            }
+                            
+                            if (baseDescription.isNotBlank()) {
+                                Text(
+                                    text = baseDescription,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+                            
+                            // Отображаем структурированные работы и запчасти
+                            if (parsedDescription.completedWorks.isNotEmpty() || 
+                                parsedDescription.usedParts.isNotEmpty() ||
+                                parsedDescription.estimatedWorks.isNotEmpty() ||
+                                parsedDescription.estimatedParts.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                RepairWorksAndPartsCard(
+                                    completedWorks = parsedDescription.completedWorks,
+                                    usedParts = parsedDescription.usedParts,
+                                    estimatedWorks = parsedDescription.estimatedWorks,
+                                    estimatedParts = parsedDescription.estimatedParts,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            
+                            // Дополнительные комментарии (если есть и они не были показаны выше)
+                            if (parsedDescription.additionalComments != null && parsedDescription.originalDescription == null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Дополнительно:",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = parsedDescription.additionalComments,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                             
                             if (order.problemWhenStarted != null) {
                                 InfoRow(icon = Icons.Default.Schedule, label = "Когда началась", value = order.problemWhenStarted)
