@@ -287,6 +287,59 @@ class ApiRepository(
         return prefsManager.authToken.first() != null
     }
     
+    // Price list methods
+    suspend fun getPrices(category: String? = null, type: String? = null): ApiResult<List<PriceDto>> {
+        return try {
+            val response = apiService.getPrices(category, type)
+            if (response.isSuccessful && response.body() != null) {
+                ApiResult.Success(response.body()!!)
+            } else {
+                handleErrorResponse(response, "Ошибка получения прайс-листа")
+            }
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "Неизвестная ошибка")
+        }
+    }
+    
+    suspend fun getServices(category: String? = null): ApiResult<List<PriceDto>> {
+        return try {
+            val response = apiService.getServices(category)
+            if (response.isSuccessful && response.body() != null) {
+                ApiResult.Success(response.body()!!)
+            } else {
+                handleErrorResponse(response, "Ошибка получения работ")
+            }
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "Неизвестная ошибка")
+        }
+    }
+    
+    suspend fun getParts(category: String? = null): ApiResult<List<PriceDto>> {
+        return try {
+            val response = apiService.getParts(category)
+            if (response.isSuccessful && response.body() != null) {
+                ApiResult.Success(response.body()!!)
+            } else {
+                handleErrorResponse(response, "Ошибка получения запчастей")
+            }
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "Неизвестная ошибка")
+        }
+    }
+    
+    suspend fun getPriceCategories(type: String? = null): ApiResult<List<String>> {
+        return try {
+            val response = apiService.getPriceCategories(type)
+            if (response.isSuccessful && response.body() != null) {
+                ApiResult.Success(response.body()!!)
+            } else {
+                handleErrorResponse(response, "Ошибка получения категорий прайса")
+            }
+        } catch (e: Exception) {
+            ApiResult.Error(e.message ?: "Неизвестная ошибка")
+        }
+    }
+    
     // Service categories and templates
     suspend fun getCategories(parentId: Long? = null): ApiResult<List<ServiceCategoryDto>> {
         return try {

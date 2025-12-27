@@ -206,6 +206,19 @@ data class OrderStatusHistoryDto(
     @SerializedName("created_at") val createdAt: String
 )
 
+// Price list models
+data class PriceDto(
+    val id: Long,
+    val category: String,
+    val name: String,
+    val price: Double,
+    val type: String, // 'service' or 'part'
+    val description: String? = null,
+    val unit: String? = "шт",
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("updated_at") val updatedAt: String? = null
+)
+
 // Service models
 data class ServiceCategoryDto(
     val id: Long,

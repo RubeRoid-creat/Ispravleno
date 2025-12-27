@@ -18,6 +18,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.bestapp.client.ui.map.MapAddressPicker
+import com.bestapp.client.di.AppContainer
+import com.bestapp.client.data.repository.ApiResult
+import com.bestapp.client.data.api.models.PriceDto
+import com.bestapp.client.ui.orders.SelectedWork
+import com.bestapp.client.ui.orders.SelectedPart
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -48,6 +53,17 @@ fun CreateOrderScreen(
     var problemExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+    
+    // Выбранные работы и запчасти
+    var selectedWorks by remember { mutableStateOf<List<SelectedWork>>(emptyList()) }
+    var selectedParts by remember { mutableStateOf<List<SelectedPart>>(emptyList()) }
+    
+    // Диалоги выбора прайса
+    var showPriceSelectionDialog by remember { mutableStateOf(false) }
+    var priceSelectionType by remember { mutableStateOf<String?>(null) } // "service" or "part"
+    var priceSearchQuery by remember { mutableStateOf("") }
+    var availablePrices by remember { mutableStateOf<List<PriceDto>>(emptyList()) }
+    var isLoadingPrices by remember { mutableStateOf(false) }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -433,6 +449,179 @@ fun CreateOrderScreen(
                 }
             }
             
+            // Предполагаемые работы и запчасти
+            Card(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "💰 Предполагаемые работы и запчасти",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    
+                    Text(
+                        text = "Выберите предполагаемые работы и запчасти из прайс-листа (опционально)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    // Выбранные работы
+                    if (selectedWorks.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Выбранные работы:",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            selectedWorks.forEachIndexed { index, work ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = work.name, style = MaterialTheme.typography.bodyMedium)
+                                        if (work.description != null) {
+                                            Text(
+                                                text = work.description,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = String.format(Locale.getDefault(), "%.0f ₽", work.price),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        IconButton(onClick = {
+                                            selectedWorks = selectedWorks.filterIndexed { i, _ -> i != index }
+                                        }) {
+                                            Icon(Icons.Default.Delete, "Удалить", tint = MaterialTheme.colorScheme.error)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    // Выбранные запчасти
+                    if (selectedParts.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Выбранные запчасти:",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            selectedParts.forEachIndexed { index, part ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = part.name, style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            text = "${part.quantity} ${part.unit ?: "шт"}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = String.format(Locale.getDefault(), "%.0f ₽", part.totalPrice),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        IconButton(onClick = {
+                                            selectedParts = selectedParts.filterIndexed { i, _ -> i != index }
+                                        }) {
+                                            Icon(Icons.Default.Delete, "Удалить", tint = MaterialTheme.colorScheme.error)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    // Кнопки добавления
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                priceSelectionType = "service"
+                                priceSearchQuery = ""
+                                availablePrices = emptyList()
+                                showPriceSelectionDialog = true
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Build, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Добавить работу")
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                priceSelectionType = "part"
+                                priceSearchQuery = ""
+                                availablePrices = emptyList()
+                                showPriceSelectionDialog = true
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Добавить запчасть")
+                        }
+                    }
+                    
+                    // Итоговая стоимость
+                    val totalCost = remember(selectedWorks, selectedParts) {
+                        selectedWorks.sumOf { it.price } + selectedParts.sumOf { it.totalPrice }
+                    }
+                    if (totalCost > 0) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Предварительная стоимость:",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.0f ₽", totalCost),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Дата и время
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -504,17 +693,57 @@ fun CreateOrderScreen(
             // Кнопка создания
             Button(
                 onClick = {
+                    // Формируем полное описание проблемы с работами и запчастями
+                    val fullDescription = buildString {
+                        append(problemDescription)
+                        
+                        if (selectedWorks.isNotEmpty() || selectedParts.isNotEmpty()) {
+                            appendLine()
+                            appendLine()
+                            
+                            if (selectedWorks.isNotEmpty()) {
+                                appendLine("Предполагаемые работы:")
+                                selectedWorks.forEachIndexed { index, work ->
+                                    val priceStr = String.format(Locale.getDefault(), " (%.0f ₽)", work.price)
+                                    appendLine("${index + 1}. ${work.name}$priceStr")
+                                    work.description?.let { desc ->
+                                        appendLine("   $desc")
+                                    }
+                                }
+                            }
+                            
+                            if (selectedParts.isNotEmpty()) {
+                                if (selectedWorks.isNotEmpty()) appendLine()
+                                appendLine("Предполагаемые запчасти:")
+                                selectedParts.forEachIndexed { index, part ->
+                                    val totalCost = part.totalPrice
+                                    val costStr = String.format(Locale.getDefault(), " (%.0f ₽)", totalCost)
+                                    appendLine("${index + 1}. ${part.name} - ${part.quantity} ${part.unit ?: "шт"}$costStr")
+                                }
+                            }
+                            
+                            val totalCost = selectedWorks.sumOf { it.price } + selectedParts.sumOf { it.totalPrice }
+                            if (totalCost > 0) {
+                                appendLine()
+                                appendLine("Предварительная стоимость: ${String.format(Locale.getDefault(), "%.0f ₽", totalCost)}")
+                            }
+                        }
+                    }.toString()
+                    
                     viewModel.createOrder(
                         deviceType = deviceType,
                         deviceBrand = deviceBrand.ifBlank { null },
-                        problemDescription = problemDescription,
+                        problemDescription = fullDescription,
                         address = address,
                         latitude = latitude,
                         longitude = longitude,
                         desiredRepairDate = if (desiredDate.isNotBlank()) 
                             "$desiredDate ${desiredTime.ifBlank { "00:00" }}" 
                         else null,
-                        urgency = "planned"
+                        urgency = "planned",
+                        clientBudget = if (selectedWorks.isNotEmpty() || selectedParts.isNotEmpty()) {
+                            selectedWorks.sumOf { it.price } + selectedParts.sumOf { it.totalPrice }
+                        } else null
                     )
                 },
                 enabled = !uiState.isLoading && 
@@ -540,6 +769,104 @@ fun CreateOrderScreen(
             }
             
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+    
+    // Price Selection Dialog
+    if (showPriceSelectionDialog && priceSelectionType != null) {
+        LaunchedEffect(priceSelectionType, deviceType) {
+            isLoadingPrices = true
+            val category = deviceType.lowercase().takeIf { it.isNotBlank() }
+            val result = when (priceSelectionType) {
+                "service" -> AppContainer.apiRepository.getServices(category)
+                "part" -> AppContainer.apiRepository.getParts(category)
+                else -> return@LaunchedEffect
+            }
+            isLoadingPrices = false
+            
+            when (result) {
+                is ApiResult.Success -> {
+                    availablePrices = result.data
+                }
+                is ApiResult.Error -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Ошибка загрузки прайса: ${result.message}")
+                    }
+                    showPriceSelectionDialog = false
+                }
+                ApiResult.Loading -> {}
+            }
+        }
+        
+        if (!isLoadingPrices && availablePrices.isNotEmpty()) {
+            PriceSelectionDialog(
+                title = if (priceSelectionType == "service") "Выбрать работу" else "Выбрать запчасть",
+                prices = availablePrices,
+                searchQuery = priceSearchQuery,
+                onSearchQueryChange = { priceSearchQuery = it },
+                onPriceSelected = { price ->
+                    when (priceSelectionType) {
+                        "service" -> {
+                            selectedWorks = selectedWorks + SelectedWork(price)
+                        }
+                        "part" -> {
+                            selectedParts = selectedParts + SelectedPart(price, 1)
+                        }
+                        else -> {}
+                    }
+                    priceSearchQuery = ""
+                    showPriceSelectionDialog = false
+                    priceSelectionType = null
+                },
+                onDismiss = {
+                    priceSearchQuery = ""
+                    showPriceSelectionDialog = false
+                    priceSelectionType = null
+                }
+            )
+        } else if (isLoadingPrices) {
+            AlertDialog(
+                onDismissRequest = {
+                    showPriceSelectionDialog = false
+                    priceSelectionType = null
+                },
+                title = { Text("Загрузка...") },
+                text = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showPriceSelectionDialog = false
+                        priceSelectionType = null
+                    }) {
+                        Text("Отмена")
+                    }
+                }
+            )
+        } else {
+            AlertDialog(
+                onDismissRequest = {
+                    showPriceSelectionDialog = false
+                    priceSelectionType = null
+                },
+                title = { Text("Прайс-лист пуст") },
+                text = { Text("Для выбранного типа техники нет доступных позиций в прайс-листе") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showPriceSelectionDialog = false
+                        priceSelectionType = null
+                    }) {
+                        Text("OK")
+                    }
+                }
+            )
         }
     }
     

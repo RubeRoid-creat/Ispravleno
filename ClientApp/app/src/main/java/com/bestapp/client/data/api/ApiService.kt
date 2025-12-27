@@ -46,6 +46,28 @@ interface ApiService {
     @POST("api/orders/reorder/{orderId}")
     suspend fun reorderOrder(@Path("orderId") orderId: Long): Response<ReorderOrderResponse>
     
+    // Price list endpoints
+    @GET("api/prices")
+    suspend fun getPrices(
+        @Query("category") category: String? = null,
+        @Query("type") type: String? = null // 'service' or 'part'
+    ): Response<List<PriceDto>>
+    
+    @GET("api/prices/services")
+    suspend fun getServices(
+        @Query("category") category: String? = null
+    ): Response<List<PriceDto>>
+    
+    @GET("api/prices/parts")
+    suspend fun getParts(
+        @Query("category") category: String? = null
+    ): Response<List<PriceDto>>
+    
+    @GET("api/prices/categories")
+    suspend fun getPriceCategories(
+        @Query("type") type: String? = null // 'service' or 'part'
+    ): Response<List<String>>
+    
     // Service categories and templates
     @GET("api/services/categories")
     suspend fun getCategories(
