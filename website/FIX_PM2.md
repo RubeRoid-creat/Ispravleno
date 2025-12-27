@@ -119,11 +119,22 @@ pm2 logs ispravleno-website --lines 50
 
 3. Убедитесь, что проект собран:
 ```bash
-ls -la .next/standalone/server.js
-# Файл должен существовать
+ls -la .next/
+# Директория .next должна существовать
 ```
 
-4. Если файла нет, пересоберите:
+4. Если директории нет, пересоберите:
 ```bash
 npm run build
 ```
+
+5. Если проблемы со статическими файлами (404 ошибки):
+```bash
+# Пересоберите проект полностью
+rm -rf .next node_modules
+npm install --legacy-peer-deps
+npm run build
+pm2 restart ispravleno-website
+```
+
+Подробнее см. [FIX_STATIC_FILES.md](./FIX_STATIC_FILES.md)
