@@ -83,8 +83,14 @@ npm run build
 # Установите PM2 глобально (если еще не установлен)
 sudo npm install -g pm2
 
-# Запустите приложение на порту 3002
-PORT=3002 pm2 start npm --name "ispravleno-website" -- start
+# Создайте директорию для логов
+mkdir -p logs
+
+# Запустите приложение используя ecosystem.config.js (рекомендуется)
+pm2 start ecosystem.config.js
+
+# ИЛИ запустите напрямую (если ecosystem.config.js не используется)
+PORT=3002 pm2 start npm --name "ispravleno-website" -- run start:standalone
 
 # Сохраните конфигурацию PM2
 pm2 save
@@ -137,6 +143,9 @@ npm run build
 
 # Перезапустите приложение
 pm2 restart ispravleno-website
+
+# Или если используете ecosystem.config.js:
+# pm2 restart ecosystem.config.js
 
 # Проверьте логи
 pm2 logs ispravleno-website
@@ -217,8 +226,27 @@ sudo lsof -i :3002
 pm2 stop ispravleno-website
 pm2 delete ispravleno-website
 
-# Запустите заново
-PORT=3002 pm2 start npm --name "ispravleno-website" -- start
+# Запустите заново с правильной командой
+PORT=3002 pm2 start npm --name "ispravleno-website" -- run start:standalone
+
+# Или используйте ecosystem.config.js
+pm2 start ecosystem.config.js
+```
+
+### Ошибка "next start does not work with output: standalone"
+
+Если видите это предупреждение, используйте правильную команду запуска:
+
+```bash
+# Остановите текущий процесс
+pm2 stop ispravleno-website
+pm2 delete ispravleno-website
+
+# Запустите с правильной командой для standalone режима
+PORT=3002 pm2 start npm --name "ispravleno-website" -- run start:standalone
+
+# Или используйте ecosystem.config.js (рекомендуется)
+pm2 start ecosystem.config.js
 ```
 
 ### Ошибка при сборке
