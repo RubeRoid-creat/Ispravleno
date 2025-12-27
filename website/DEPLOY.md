@@ -40,7 +40,7 @@ DATABASE_URL="postgresql://user:password@localhost:5432/ispravleno"
 NEXT_PUBLIC_ADMIN_API_URL="http://212.74.227.208:3000/api"
 
 # Сайт
-NEXT_PUBLIC_SITE_URL="http://212.74.227.208:3001"
+NEXT_PUBLIC_SITE_URL="http://212.74.227.208:3002"
 
 # Яндекс.Карты (опционально)
 NEXT_PUBLIC_YANDEX_MAPS_API_KEY="your_yandex_maps_api_key"
