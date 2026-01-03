@@ -60,7 +60,7 @@ export default function Layout({ children }) {
     <Box>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          BestApp Admin
+          Исправлено Админ
         </Typography>
       </Toolbar>
       <Divider />
@@ -114,7 +114,7 @@ export default function Layout({ children }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Панель администратора
+            Исправлено Админ
           </Typography>
         </Toolbar>
       </AppBar>
