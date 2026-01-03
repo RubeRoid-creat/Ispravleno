@@ -158,5 +158,15 @@ export const telegramAPI = {
   testConnection: () => api.post('/admin/telegram/test'),
 };
 
+// Загрузка файлов
+export const uploadAPI = {
+  uploadImage: (formData) => api.post('/admin/upload/image', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  deleteImage: (filename) => api.delete(`/admin/upload/image/${filename}`),
+};
+
 export default api;
 

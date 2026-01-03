@@ -6,6 +6,14 @@ import { notifyMasters } from '../services/assignment-service.js';
 import { verifySMSService, checkSMSRuBalance } from '../services/sms-service.js';
 import { verifyEmailService } from '../services/email-service.js';
 import { getRateLimitStats, unblockIP, resetIPCounter } from '../middleware/rate-limiter.js';
+import { handleUploadError } from '../middleware/upload.js';
+import multer from 'multer';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const router = express.Router();
 
@@ -1197,6 +1205,88 @@ router.post('/telegram/test', authenticateToken, isAdmin, async (req, res) => {
   } catch (error) {
     console.error('Ошибка тестирования Telegram:', error);
     res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+  }
+});
+
+// ============= Загрузка изображений =============
+
+// Настройка multer для загрузки изображений в админ панели
+const adminImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = join(__dirname, '..', 'uploads', 'admin');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = file.originalname.split('.').pop() || 'jpg';
+    cb(null, `admin-${uniqueSuffix}.${ext}`);
+  }
+});
+
+const adminImageUpload = multer({
+  storage: adminImageStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Разрешены только изображения'));
+    }
+  }
+});
+
+// Загрузить изображение
+router.post('/upload/image', authenticateToken, isAdmin, adminImageUpload.single('image'), handleUploadError, (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Изображение не загружено' });
+    }
+
+    // Формируем URL для доступа к изображению
+    const imageUrl = `/uploads/admin/${req.file.filename}`;
+    const fullUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${imageUrl}`;
+
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      fullUrl: fullUrl,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+  } catch (error) {
+    console.error('Ошибка загрузки изображения:', error);
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Ошибка удаления файла:', unlinkError);
+      }
+    }
+    res.status(500).json({ error: 'Ошибка сервера при загрузке изображения' });
+  }
+});
+
+// Удалить изображение
+router.delete('/upload/image/:filename', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = join(__dirname, '..', 'uploads', 'admin', filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Файл не найден' });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: 'Изображение удалено' });
+  } catch (error) {
+    console.error('Ошибка удаления изображения:', error);
+    res.status(500).json({ error: 'Ошибка сервера при удалении изображения' });
   }
 });
 

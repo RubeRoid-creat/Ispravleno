@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { newsAPI } from '../api/api';
+import ImageUpload from '../components/ImageUpload';
 
 const CATEGORIES = [
   { value: 'general', label: 'Общее' },
@@ -281,11 +282,10 @@ export default function News() {
                 </Select>
               </FormControl>
             </Box>
-            <TextField
-              label="URL изображения"
-              fullWidth
+            <ImageUpload
+              label="Изображение"
               value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+              onChange={(imageUrl) => setForm({ ...form, image_url: imageUrl })}
             />
           </Box>
         </DialogContent>
@@ -311,5 +311,6 @@ export default function News() {
     </Box>
   );
 }
+
 
 
