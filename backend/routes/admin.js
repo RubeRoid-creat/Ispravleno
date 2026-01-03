@@ -1,6 +1,6 @@
 import express from 'express';
 import { query } from '../database/db.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate, authorize, authenticateToken, isAdmin } from '../middleware/auth.js';
 import { createBackup, listBackups, restoreBackup } from '../services/backup-service.js';
 import { notifyMasters } from '../services/assignment-service.js';
 import { verifySMSService, checkSMSRuBalance } from '../services/sms-service.js';
