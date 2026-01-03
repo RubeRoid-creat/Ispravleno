@@ -487,6 +487,75 @@ router.delete('/masters/:masterId', (req, res) => {
   }
 });
 
+// Удалить пользователя
+router.delete('/users/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Проверяем существование пользователя
+    const user = query.get('SELECT id, name, email, role FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    // Если это мастер, проверяем активные заказы
+    if (user.role === 'master') {
+      const master = query.get('SELECT id FROM masters WHERE user_id = ?', [userId]);
+      if (master) {
+        const activeOrders = query.all(`
+          SELECT COUNT(*) as count 
+          FROM orders 
+          WHERE assigned_master_id = ? 
+            AND repair_status IN ('new', 'in_progress', 'diagnostics', 'waiting_parts')
+        `, [master.id]);
+        
+        if (activeOrders.length > 0 && activeOrders[0].count > 0) {
+          return res.status(400).json({ 
+            error: 'Невозможно удалить мастера с активными заказами',
+            activeOrdersCount: activeOrders[0].count
+          });
+        }
+        
+        // Удаляем назначения мастера
+        query.run('DELETE FROM order_assignments WHERE master_id = ?', [master.id]);
+        query.run('UPDATE orders SET assigned_master_id = NULL WHERE assigned_master_id = ?', [master.id]);
+        query.run('UPDATE orders SET preferred_master_id = NULL WHERE preferred_master_id = ?', [master.id]);
+        
+        // Удаляем мастера
+        query.run('DELETE FROM masters WHERE id = ?', [master.id]);
+      }
+    }
+    
+    // Если это клиент, удаляем связанные данные
+    if (user.role === 'client') {
+      const client = query.get('SELECT id FROM clients WHERE user_id = ?', [userId]);
+      if (client) {
+        // Обнуляем заказы клиента (или можно удалить, в зависимости от бизнес-логики)
+        query.run('UPDATE orders SET client_id = NULL WHERE client_id = ?', [client.id]);
+        query.run('DELETE FROM clients WHERE id = ?', [client.id]);
+      }
+    }
+    
+    // Удаляем пользователя (CASCADE удалит связанные записи)
+    query.run('DELETE FROM users WHERE id = ?', [userId]);
+    
+    console.log(`🗑️ Администратор ${req.user.id} удалил пользователя #${userId} (${user.name}, ${user.email}, роль: ${user.role})`);
+    
+    res.json({ 
+      message: 'Пользователь успешно удален',
+      deletedUser: {
+        id: userId,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка удаления пользователя:', error);
+    res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+  }
+});
+
 // ============= Резервное копирование =============
 
 // Создать бэкап

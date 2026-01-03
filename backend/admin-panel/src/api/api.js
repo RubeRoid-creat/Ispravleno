@@ -80,6 +80,7 @@ export const ordersAPI = {
 export const usersAPI = {
   getAll: (params) => api.get('/admin/users', { params }),
   block: (userId, blocked, reason) => api.post(`/admin/users/${userId}/block`, { blocked, reason }),
+  delete: (userId) => api.delete(`/admin/users/${userId}`),
 };
 
 // Мастера

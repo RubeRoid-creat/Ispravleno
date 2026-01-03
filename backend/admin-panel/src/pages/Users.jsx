@@ -21,7 +21,7 @@ import {
   Switch,
   FormControlLabel,
 } from '@mui/material';
-import { usersAPI, mastersAPI } from '../api/api';
+import { usersAPI } from '../api/api';
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -57,16 +57,11 @@ export default function Users() {
 
   const handleDelete = async () => {
     try {
-      if (!deleteDialog.user?.master_id) {
-        setError('Этот пользователь не является мастером');
-        return;
-      }
-      
-      await mastersAPI.delete(deleteDialog.user.master_id);
+      await usersAPI.delete(deleteDialog.user.id);
       setDeleteDialog({ open: false, user: null });
       loadUsers();
     } catch (err) {
-      setError(err.response?.data?.error || 'Ошибка удаления мастера');
+      setError(err.response?.data?.error || 'Ошибка удаления пользователя');
     }
   };
 
@@ -149,16 +144,14 @@ export default function Users() {
                     >
                       {user.is_blocked ? 'Разблокировать' : 'Заблокировать'}
                     </Button>
-                    {user.role === 'master' && user.master_id && (
-                      <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => setDeleteDialog({ open: true, user })}
-                      >
-                        Удалить
-                      </Button>
-                    )}
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      onClick={() => setDeleteDialog({ open: true, user })}
+                    >
+                      Удалить
+                    </Button>
                   </Box>
                 </TableCell>
               </TableRow>
@@ -204,15 +197,15 @@ export default function Users() {
         </DialogActions>
       </Dialog>
 
-      {/* Диалог удаления мастера */}
+      {/* Диалог удаления пользователя */}
       <Dialog
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, user: null })}
       >
-        <DialogTitle>Удалить аккаунт мастера</DialogTitle>
+        <DialogTitle>Удалить пользователя</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Вы уверены, что хотите удалить аккаунт мастера?
+            Вы уверены, что хотите удалить этого пользователя?
           </Typography>
           <Typography variant="body2" sx={{ mb: 1 }}>
             <strong>Имя:</strong> {deleteDialog.user?.name}
@@ -220,12 +213,18 @@ export default function Users() {
           <Typography variant="body2" sx={{ mb: 1 }}>
             <strong>Email:</strong> {deleteDialog.user?.email}
           </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
             <strong>Телефон:</strong> {deleteDialog.user?.phone}
           </Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            <strong>Роль:</strong> {deleteDialog.user?.role === 'master' ? 'Мастер' : 
+                                   deleteDialog.user?.role === 'client' ? 'Клиент' : 
+                                   deleteDialog.user?.role}
+          </Typography>
           <Alert severity="warning" sx={{ mt: 2 }}>
-            Это действие необратимо! Будет удален аккаунт мастера и связанный пользователь.
-            Все связанные данные (заказы, назначения, транзакции) также будут удалены.
+            Это действие необратимо! Будет удален аккаунт пользователя и все связанные данные.
+            {deleteDialog.user?.role === 'master' && ' Для мастеров также будут удалены все назначения и связанные заказы.'}
+            {deleteDialog.user?.role === 'client' && ' Для клиентов будут удалены все связанные заказы.'}
           </Alert>
         </DialogContent>
         <DialogActions>
