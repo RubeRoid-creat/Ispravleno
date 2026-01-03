@@ -1082,5 +1082,123 @@ router.put('/feedback/:id/status', (req, res) => {
   }
 });
 
+// ============= Telegram Bot =============
+
+// Получить настройки Telegram бота
+router.get('/telegram/config', authenticateToken, isAdmin, (req, res) => {
+  try {
+    let botToken = '';
+    let channelId = '';
+
+    // Пытаемся загрузить из БД
+    try {
+      const botTokenSetting = query.get('SELECT value FROM settings WHERE key = ?', ['telegram_bot_token']);
+      const channelIdSetting = query.get('SELECT value FROM settings WHERE key = ?', ['telegram_channel_id']);
+      
+      botToken = botTokenSetting?.value || process.env.TELEGRAM_BOT_TOKEN || '';
+      channelId = channelIdSetting?.value || process.env.TELEGRAM_CHANNEL_ID || '';
+    } catch (error) {
+      // Если таблицы нет, используем только переменные окружения
+      botToken = process.env.TELEGRAM_BOT_TOKEN || '';
+      channelId = process.env.TELEGRAM_CHANNEL_ID || '';
+    }
+
+    res.json({
+      botToken: botToken,
+      channelId: channelId,
+      isConfigured: !!(botToken && channelId)
+    });
+  } catch (error) {
+    console.error('Ошибка получения настроек Telegram:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// Обновить настройки Telegram бота
+router.post('/telegram/config', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { botToken, channelId } = req.body;
+
+    if (!botToken || !channelId) {
+      return res.status(400).json({ error: 'Токен бота и ID канала обязательны' });
+    }
+
+    // Обновляем настройки в сервисе
+    const telegramBot = (await import('../services/telegram-bot.js')).default;
+    telegramBot.updateConfig(botToken, channelId);
+
+    // Проверяем подключение
+    const connectionTest = await telegramBot.testConnection();
+    if (!connectionTest.success) {
+      return res.status(400).json({ 
+        error: 'Не удалось подключиться к боту', 
+        details: connectionTest.error 
+      });
+    }
+
+    // Проверяем доступ к каналу
+    const channelTest = await telegramBot.testChannel();
+    if (!channelTest.success) {
+      return res.status(400).json({ 
+        error: 'Не удалось получить доступ к каналу', 
+        details: channelTest.error 
+      });
+    }
+
+    // Сохраняем в переменные окружения (в реальном проекте лучше использовать БД или конфиг файл)
+    // Для простоты сохраняем в .env файл или используем БД для хранения настроек
+    // Здесь мы просто обновляем в памяти, для постоянного хранения нужно использовать БД
+    
+    res.json({ 
+      message: 'Настройки Telegram бота обновлены',
+      bot: connectionTest.bot,
+      channel: channelTest.chat
+    });
+  } catch (error) {
+    console.error('Ошибка обновления настроек Telegram:', error);
+    res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+  }
+});
+
+// Тест подключения к Telegram боту
+router.post('/telegram/test', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const telegramBot = (await import('../services/telegram-bot.js')).default;
+    
+    const connectionTest = await telegramBot.testConnection();
+    if (!connectionTest.success) {
+      return res.status(400).json({ 
+        success: false,
+        error: connectionTest.error 
+      });
+    }
+
+    const channelTest = await telegramBot.testChannel();
+    if (!channelTest.success) {
+      return res.status(400).json({ 
+        success: false,
+        error: channelTest.error 
+      });
+    }
+
+    // Отправляем тестовое сообщение
+    const testMessage = await telegramBot.sendMessage(
+      '✅ <b>Тестовое сообщение</b>\n\nБот успешно настроен и готов к работе!',
+      null,
+      { parse_mode: 'HTML' }
+    );
+
+    res.json({ 
+      success: true,
+      bot: connectionTest.bot,
+      channel: channelTest.chat,
+      testMessage: testMessage
+    });
+  } catch (error) {
+    console.error('Ошибка тестирования Telegram:', error);
+    res.status(500).json({ error: 'Ошибка сервера', details: error.message });
+  }
+});
+
 export default router;
 

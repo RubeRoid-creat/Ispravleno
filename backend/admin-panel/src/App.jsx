@@ -15,6 +15,7 @@ import News from './pages/News';
 import AdminChat from './pages/AdminChat';
 import Feedback from './pages/Feedback';
 import Prices from './pages/Prices';
+import TelegramSettings from './pages/TelegramSettings';
 
 const theme = createTheme({
   palette: {
@@ -64,6 +65,7 @@ function AppContent() {
                     <Route path="/backups" element={<Backups />} />
                     <Route path="/news" element={<News />} />
                     <Route path="/prices" element={<Prices />} />
+                    <Route path="/telegram" element={<TelegramSettings />} />
                   </Routes>
                 </Layout>
               </PrivateRoute>

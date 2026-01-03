@@ -1,6 +1,7 @@
 import express from 'express';
 import { query } from '../database/db.js';
 import { authenticateToken, isAdmin } from '../middleware/auth.js';
+import telegramBot from '../services/telegram-bot.js';
 
 const router = express.Router();
 
@@ -94,6 +95,14 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
     const newItem = query.get('SELECT * FROM news WHERE id = ?', [result.lastInsertRowid]);
     if (newItem) {
       console.log(`[NEWS] ✅ Создана новость: id=${newItem.id}, title="${newItem.title}", is_active=${newItem.is_active}, published_at=${newItem.published_at}`);
+      
+      // Отправка в Telegram (если новость активна)
+      if (newItem.is_active) {
+        telegramBot.postNews(newItem, false).catch(err => {
+          console.error('[NEWS] Ошибка при отправке новости в Telegram:', err);
+          // Не прерываем ответ, если Telegram не работает
+        });
+      }
     } else {
       console.error(`[NEWS] ❌ Ошибка: новость не найдена после создания, lastInsertRowid=${result.lastInsertRowid}`);
     }
@@ -143,6 +152,15 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     );
     
     const updated = query.get('SELECT * FROM news WHERE id = ?', [req.params.id]);
+    
+    // Отправка обновленной новости в Telegram (если новость активна)
+    if (updated && updated.is_active) {
+      telegramBot.postNews(updated, true).catch(err => {
+        console.error('[NEWS] Ошибка при отправке обновленной новости в Telegram:', err);
+        // Не прерываем ответ, если Telegram не работает
+      });
+    }
+    
     res.json(updated);
   } catch (error) {
     console.error('Ошибка при обновлении новости:', error);
@@ -172,5 +190,6 @@ router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 export default router;
+
 
 

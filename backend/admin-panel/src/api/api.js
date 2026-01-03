@@ -151,5 +151,12 @@ export const feedbackAPI = {
   updateStatus: (id, status) => api.put(`/admin/feedback/${id}/status`, { status }),
 };
 
+// Telegram бот
+export const telegramAPI = {
+  getConfig: () => api.get('/admin/telegram/config'),
+  updateConfig: (botToken, channelId) => api.post('/admin/telegram/config', { botToken, channelId }),
+  testConnection: () => api.post('/admin/telegram/test'),
+};
+
 export default api;
 

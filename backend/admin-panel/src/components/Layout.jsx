@@ -25,6 +25,7 @@ import NewspaperIcon from '@mui/icons-material/Newspaper';
 import ChatIcon from '@mui/icons-material/Chat';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import TelegramIcon from '@mui/icons-material/Telegram';
 import LogoutIcon from '@mui/icons-material/Logout';
 
 const drawerWidth = 240;
@@ -39,6 +40,7 @@ const menuItems = [
   { text: 'Обратная связь', icon: <FeedbackIcon />, path: '/feedback' },
   { text: 'Новости', icon: <NewspaperIcon />, path: '/news' },
   { text: 'Прайс-лист', icon: <AttachMoneyIcon />, path: '/prices' },
+  { text: 'Telegram бот', icon: <TelegramIcon />, path: '/telegram' },
   { text: 'Бэкапы', icon: <BackupIcon />, path: '/backups' },
 ];
 

@@ -67,3 +67,9 @@ TWILIO_PHONE_NUMBER=+1234567890
 RATE_LIMIT_ENABLED=true
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+
+# Telegram Bot (для автоматической публикации новостей)
+# Получите токен у @BotFather в Telegram
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+# ID канала (например: @ispravlenorbt или -1001234567890)
+TELEGRAM_CHANNEL_ID=@your_channel_username

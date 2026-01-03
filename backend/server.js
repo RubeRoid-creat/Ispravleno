@@ -294,6 +294,24 @@ app.use((req, res, next) => {
       console.warn('⚠️ Ошибка миграции admin-chat и feedback:', error.message);
     }
     
+    // Создаем таблицу настроек если её нет
+    try {
+      query.run(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT UNIQUE NOT NULL,
+          value TEXT,
+          description TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      query.run('CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key)');
+      console.log('✅ Таблица settings создана/проверена');
+    } catch (error) {
+      console.warn('⚠️ Ошибка создания таблицы settings:', error.message);
+    }
+    
     // Проверяем наличие тестового мастера
     const testMaster = query.get('SELECT id, email, name, role FROM users WHERE email = ?', ['master@test.com']);
     if (testMaster) {
