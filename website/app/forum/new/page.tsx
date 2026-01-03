@@ -3,13 +3,36 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-const categories = [
-  'Общие вопросы',
-  'Ремонт холодильников',
-  'Ремонт стиральных машин',
-  'Ремонт микроволновок',
-  'Другое',
-]
+const categoryGroups = {
+  'Типы техники': [
+    'Холодильник',
+    'Стиральная машина',
+    'Посудомоечная машина',
+    'Духовой шкаф',
+    'Варочная панель',
+    'Кондиционер',
+    'Кофемашина',
+    'Микроволновая печь',
+  ],
+  'Категории': [
+    'Коды ошибок',
+    'Тестовый режим',
+    'Обслуживание',
+    'Диагностика',
+    'Замена запчастей',
+    'Профилактика',
+  ],
+  'Бренды': [
+    'Samsung',
+    'LG',
+    'Bosch',
+    'Indesit',
+    'Ariston',
+    'Electrolux',
+    'Siemens',
+    'Whirlpool',
+  ],
+}
 
 export default function NewTopicPage() {
   const router = useRouter()
@@ -88,10 +111,14 @@ export default function NewTopicPage() {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#424242]"
           >
             <option value="">Выберите категорию</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
+            {Object.entries(categoryGroups).map(([groupName, categories]) => (
+              <optgroup key={groupName} label={groupName}>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

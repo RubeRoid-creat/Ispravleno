@@ -14,18 +14,41 @@ interface ForumTopic {
   views: number
 }
 
-const categories = [
-  'Все',
-  'Общие вопросы',
-  'Ремонт холодильников',
-  'Ремонт стиральных машин',
-  'Ремонт микроволновок',
-  'Другое',
-]
+const categoryGroups = {
+  'Типы техники': [
+    'Холодильник',
+    'Стиральная машина',
+    'Посудомоечная машина',
+    'Духовой шкаф',
+    'Варочная панель',
+    'Кондиционер',
+    'Кофемашина',
+    'Микроволновая печь',
+  ],
+  'Категории': [
+    'Коды ошибок',
+    'Тестовый режим',
+    'Обслуживание',
+    'Диагностика',
+    'Замена запчастей',
+    'Профилактика',
+  ],
+  'Бренды': [
+    'Samsung',
+    'LG',
+    'Bosch',
+    'Indesit',
+    'Ariston',
+    'Electrolux',
+    'Siemens',
+    'Whirlpool',
+  ],
+}
 
 export default function ForumPage() {
   const [topics, setTopics] = useState<ForumTopic[]>([])
   const [selectedCategory, setSelectedCategory] = useState('Все')
+  const [selectedGroup, setSelectedGroup] = useState<string>('Типы техники')
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -105,21 +128,83 @@ export default function ForumPage() {
         </div>
       </div>
 
-      {/* Категории */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        {categories.map((category) => (
+      {/* Группы категорий */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200">
           <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedCategory === category
-                ? 'bg-[#424242] text-white'
-                : 'bg-gray-100 text-[#424242] hover:bg-gray-200'
+            onClick={() => {
+              setSelectedCategory('Все')
+              setSelectedGroup('Типы техники')
+            }}
+            className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+              selectedCategory === 'Все'
+                ? 'border-[#424242] text-[#424242]'
+                : 'border-transparent text-gray-500 hover:text-[#424242]'
             }`}
           >
-            {category}
+            Все темы
           </button>
-        ))}
+          {Object.keys(categoryGroups).map((group) => (
+            <button
+              key={group}
+              onClick={() => {
+                setSelectedGroup(group)
+                setSelectedCategory('Все')
+              }}
+              className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+                selectedGroup === group && selectedCategory !== 'Все'
+                  ? 'border-[#424242] text-[#424242]'
+                  : 'border-transparent text-gray-500 hover:text-[#424242]'
+              }`}
+            >
+              {group}
+            </button>
+          ))}
+        </div>
+
+        {/* Категории выбранной группы */}
+        {selectedCategory === 'Все' && selectedGroup !== 'Типы техники' && (
+          <div className="flex flex-wrap gap-2">
+            {categoryGroups[selectedGroup as keyof typeof categoryGroups].map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className="px-4 py-2 rounded-lg bg-gray-100 text-[#424242] hover:bg-gray-200 transition-colors"
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {selectedCategory === 'Все' && selectedGroup === 'Типы техники' && (
+          <div className="flex flex-wrap gap-2">
+            {categoryGroups['Типы техники'].map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className="px-4 py-2 rounded-lg bg-gray-100 text-[#424242] hover:bg-gray-200 transition-colors"
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {selectedCategory !== 'Все' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Выбрано:</span>
+            <span className="px-4 py-2 rounded-lg bg-[#424242] text-white font-medium">
+              {selectedCategory}
+            </span>
+            <button
+              onClick={() => setSelectedCategory('Все')}
+              className="text-sm text-gray-500 hover:text-[#424242] underline"
+            >
+              Сбросить фильтр
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (

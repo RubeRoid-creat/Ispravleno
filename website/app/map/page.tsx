@@ -12,74 +12,55 @@ export default function MapPage() {
       return
     }
 
-    // Проверяем, не загружен ли уже скрипт
     const existingScript = document.querySelector('script[src*="api-maps.yandex.ru"]')
     
     if (existingScript && window.ymaps) {
-      // Скрипт уже загружен, создаем карту сразу
       window.ymaps.ready(() => {
         if (!mapInstanceRef.current && mapRef.current) {
           mapInstanceRef.current = new window.ymaps.Map(mapRef.current, {
-            center: [55.751244, 37.618423], // Москва (замените на нужные координаты)
-            zoom: 10,
+            center: [56.852878, 35.928228],
+            zoom: 15,
           })
 
-          // Пример точек на карте
-          const points = [
-            { coords: [55.751244, 37.618423], title: 'Сервисный центр 1', address: 'Адрес 1' },
-            { coords: [55.755244, 37.628423], title: 'Сервисный центр 2', address: 'Адрес 2' },
-          ]
-
-          points.forEach((point) => {
-            const placemark = new window.ymaps.Placemark(
-              point.coords,
-              {
-                balloonContent: `<strong>${point.title}</strong><br>${point.address}`,
-              },
-              {
-                preset: 'islands#darkIcon',
-              }
-            )
-            mapInstanceRef.current.geoObjects.add(placemark)
-          })
+          const placemark = new window.ymaps.Placemark(
+            [56.852878, 35.928228],
+            {
+              balloonContent: '<strong>Магазин Запчастей</strong><br>г. Тверь, Московская улица, 1<br>8 (920) 166-93-81',
+            },
+            {
+              preset: 'islands#redIcon',
+            }
+          )
+          mapInstanceRef.current.geoObjects.add(placemark)
         }
       })
       return
     }
 
-    // Загружаем скрипт только если его еще нет
     if (!scriptLoadedRef.current) {
       scriptLoadedRef.current = true
       const script = document.createElement('script')
-      script.src = 'https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU'
+      script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
       script.async = true
       script.onload = () => {
         if (window.ymaps && mapRef.current && !mapInstanceRef.current) {
           window.ymaps.ready(() => {
             if (!mapInstanceRef.current && mapRef.current) {
               mapInstanceRef.current = new window.ymaps.Map(mapRef.current, {
-                center: [55.751244, 37.618423], // Москва (замените на нужные координаты)
-                zoom: 10,
+                center: [56.852878, 35.928228],
+                zoom: 15,
               })
 
-              // Пример точек на карте
-              const points = [
-                { coords: [55.751244, 37.618423], title: 'Сервисный центр 1', address: 'Адрес 1' },
-                { coords: [55.755244, 37.628423], title: 'Сервисный центр 2', address: 'Адрес 2' },
-              ]
-
-              points.forEach((point) => {
-                const placemark = new window.ymaps.Placemark(
-                  point.coords,
-                  {
-                    balloonContent: `<strong>${point.title}</strong><br>${point.address}`,
-                  },
-                  {
-                    preset: 'islands#darkIcon',
-                  }
-                )
-                mapInstanceRef.current.geoObjects.add(placemark)
-              })
+              const placemark = new window.ymaps.Placemark(
+                [56.852878, 35.928228],
+                {
+                  balloonContent: '<strong>Магазин Запчастей</strong><br>г. Тверь, Московская улица, 1<br>8 (920) 166-93-81',
+                },
+                {
+                  preset: 'islands#redIcon',
+                }
+              )
+              mapInstanceRef.current.geoObjects.add(placemark)
             }
           })
         }
@@ -88,7 +69,6 @@ export default function MapPage() {
     }
 
     return () => {
-      // Очистка карты при размонтировании
       if (mapInstanceRef.current) {
         mapInstanceRef.current.destroy()
         mapInstanceRef.current = null
@@ -98,57 +78,46 @@ export default function MapPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="bg-white py-16 md:py-24 border-b border-gray-100">
+      <section className="bg-white py-16 md:py-24">
         <div className="container mx-auto px-4 max-w-6xl">
-          <h1 className="text-5xl md:text-6xl font-bold text-[#1a1a1a] mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#1a1a1a] mb-4">
             Карта оказания услуг
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl">
-            Найдите ближайший сервисный центр или магазин на карте. Нажмите на метку для получения
-            подробной информации.
+          <p className="text-base text-gray-600 max-w-2xl mb-8">
+            Наш сервисный центр и магазин запчастей в Твери. Нажмите на метку на карте для получения подробной информации.
           </p>
+          
+          <div ref={mapRef} className="w-full h-[500px] rounded-lg mb-8" />
+
+          <div className="max-w-sm">
+            <div className="border-2 border-gray-200 rounded-lg p-6 relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600"></div>
+              <h3 className="text-xl font-bold text-[#1a1a1a] mb-4 pl-3">Магазин Запчастей</h3>
+              <div className="space-y-3 text-sm text-gray-600 pl-3">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase mb-1">АДРЕС</p>
+                  <p className="text-black">г. Тверь, Московская улица, 1</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase mb-1">ТЕЛЕФОН</p>
+                  <p className="text-black font-medium">8 (920) 166-93-81</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 uppercase mb-1">ЧАСЫ РАБОТЫ</p>
+                  <p className="text-black">ПН-ПТ с 11:00 по 18:00</p>
+                  <p className="text-gray-500 text-xs mt-1">СБ, ВС — выходной</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
-
-      <div className="container mx-auto px-4 py-16 max-w-6xl">
-        <div ref={mapRef} className="w-full h-[600px] rounded-2xl border-2 border-gray-100 mb-16" />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="border-2 border-gray-100 rounded-2xl p-8 hover:border-black transition">
-            <h3 className="text-2xl font-bold text-[#1a1a1a] mb-4">Сервисный центр 1</h3>
-            <div className="space-y-3 text-gray-600">
-              <p><span className="font-medium text-black">Адрес:</span> ул. Примерная, д. 1</p>
-              <p><span className="font-medium text-black">Телефон:</span> +7 (XXX) XXX-XX-XX</p>
-              <p><span className="font-medium text-black">Часы работы:</span> Пн-Пт 9:00-18:00</p>
-            </div>
-          </div>
-          <div className="border-2 border-gray-100 rounded-2xl p-8 hover:border-black transition">
-            <h3 className="text-2xl font-bold text-[#1a1a1a] mb-4">Сервисный центр 2</h3>
-            <div className="space-y-3 text-gray-600">
-              <p><span className="font-medium text-black">Адрес:</span> ул. Примерная, д. 2</p>
-              <p><span className="font-medium text-black">Телефон:</span> +7 (XXX) XXX-XX-XX</p>
-              <p><span className="font-medium text-black">Часы работы:</span> Пн-Пт 9:00-18:00</p>
-            </div>
-          </div>
-          <div className="border-2 border-gray-100 rounded-2xl p-8 hover:border-black transition">
-            <h3 className="text-2xl font-bold text-[#1a1a1a] mb-4">Магазин запчастей</h3>
-            <div className="space-y-3 text-gray-600">
-              <p><span className="font-medium text-black">Адрес:</span> ул. Примерная, д. 3</p>
-              <p><span className="font-medium text-black">Телефон:</span> +7 (XXX) XXX-XX-XX</p>
-              <p><span className="font-medium text-black">Часы работы:</span> Пн-Сб 10:00-20:00</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
 
-// Расширение типов для Яндекс.Карт
 declare global {
   interface Window {
     ymaps: any
   }
 }
-

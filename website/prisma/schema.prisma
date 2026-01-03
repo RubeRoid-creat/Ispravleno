@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,9 +15,9 @@ datasource db {
 
 model News {
   id        Int      @id @default(autoincrement())
-  title     String   @db.VarChar(255)
-  content   String   @db.Text
-  imageUrl  String?  @map("image_url") @db.VarChar(500)
+  title     String
+  content   String
+  imageUrl  String?  @map("image_url")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -26,10 +26,10 @@ model News {
 
 model Price {
   id        Int      @id @default(autoincrement())
-  category  String   @db.VarChar(100)
-  name      String   @db.VarChar(255)
-  price     Decimal  @db.Decimal(10, 2)
-  type      String   @db.VarChar(20) // 'service' or 'part'
+  category  String
+  name      String
+  price     Decimal
+  type      String   // 'service' or 'part'
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -40,10 +40,10 @@ model Price {
 
 model ForumTopic {
   id          Int          @id @default(autoincrement())
-  title       String       @db.VarChar(255)
-  content     String       @db.Text
-  author      String       @db.VarChar(255)
-  category    String       @db.VarChar(100)
+  title       String
+  content     String
+  author      String
+  category    String
   views       Int          @default(0)
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
@@ -57,8 +57,8 @@ model ForumTopic {
 model ForumReply {
   id        Int        @id @default(autoincrement())
   topicId   Int        @map("topic_id")
-  content   String     @db.Text
-  author    String     @db.VarChar(255)
+  content   String
+  author    String
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
   topic     ForumTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
@@ -70,10 +70,10 @@ model ForumReply {
 
 model ContactMessage {
   id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(255)
-  email     String   @db.VarChar(255)
-  phone     String?  @db.VarChar(50)
-  message   String   @db.Text
+  name      String
+  email     String
+  phone     String?
+  message   String
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("contact_messages")
