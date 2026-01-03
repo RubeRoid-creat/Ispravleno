@@ -424,3 +424,5 @@ function PriceModal({ item, onClose, onSave, categories }: PriceModalProps) {
     </div>
   )
 }
+
+

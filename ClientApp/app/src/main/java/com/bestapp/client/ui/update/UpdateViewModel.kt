@@ -94,30 +94,30 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             try {
                 android.util.Log.d("UpdateViewModel", "📡 Запуск downloadUpdate...")
-                updateService.downloadUpdate(downloadUrl)
-                    .catch { e ->
+            updateService.downloadUpdate(downloadUrl)
+                .catch { e ->
                         android.util.Log.e("UpdateViewModel", "❌ Ошибка в Flow: ${e.message}", e)
-                        _uiState.value = _uiState.value.copy(
-                            isDownloading = false,
-                            errorMessage = e.message ?: "Ошибка загрузки"
-                        )
-                    }
-                    .collect { progress ->
+                    _uiState.value = _uiState.value.copy(
+                        isDownloading = false,
+                        errorMessage = e.message ?: "Ошибка загрузки"
+                    )
+                }
+                .collect { progress ->
                         android.util.Log.d("UpdateViewModel", "📊 Получен прогресс: $progress")
-                        when (progress) {
-                            is DownloadProgress.Progress -> {
+                    when (progress) {
+                        is DownloadProgress.Progress -> {
                                 android.util.Log.d("UpdateViewModel", "📈 Прогресс: ${progress.percent}%")
-                                _uiState.value = _uiState.value.copy(
-                                    downloadProgress = progress.percent
-                                )
-                            }
-                            is DownloadProgress.Success -> {
+                            _uiState.value = _uiState.value.copy(
+                                downloadProgress = progress.percent
+                            )
+                        }
+                        is DownloadProgress.Success -> {
                                 android.util.Log.d("UpdateViewModel", "✅ Загрузка завершена: ${progress.file.absolutePath}")
-                                _uiState.value = _uiState.value.copy(
-                                    isDownloading = false,
-                                    downloadProgress = 100
-                                )
-                                try {
+                            _uiState.value = _uiState.value.copy(
+                                isDownloading = false,
+                                downloadProgress = 100
+                            )
+                            try {
                                     // Проверяем разрешение на установку для Android 8.0+
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !updateService.canInstallPackages()) {
                                         android.util.Log.w("UpdateViewModel", "⚠️ Нет разрешения на установку")
@@ -127,23 +127,23 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
                                         updateService.requestInstallPermission()
                                     } else {
                                         android.util.Log.d("UpdateViewModel", "🚀 Начинаем установку APK")
-                                        updateService.installApk(progress.file)
+                                updateService.installApk(progress.file)
                                     }
-                                } catch (e: Exception) {
+                            } catch (e: Exception) {
                                     android.util.Log.e("UpdateViewModel", "❌ Ошибка установки: ${e.message}", e)
-                                    _uiState.value = _uiState.value.copy(
-                                        errorMessage = "Ошибка установки: ${e.message}"
-                                    )
-                                }
-                            }
-                            is DownloadProgress.Error -> {
-                                android.util.Log.e("UpdateViewModel", "❌ Ошибка загрузки: ${progress.message}")
                                 _uiState.value = _uiState.value.copy(
-                                    isDownloading = false,
-                                    errorMessage = progress.message
+                                    errorMessage = "Ошибка установки: ${e.message}"
                                 )
                             }
                         }
+                        is DownloadProgress.Error -> {
+                                android.util.Log.e("UpdateViewModel", "❌ Ошибка загрузки: ${progress.message}")
+                            _uiState.value = _uiState.value.copy(
+                                isDownloading = false,
+                                errorMessage = progress.message
+                            )
+                        }
+                    }
                     }
             } catch (e: Exception) {
                 android.util.Log.e("UpdateViewModel", "❌ Исключение при загрузке: ${e.message}", e)
@@ -151,7 +151,7 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
                     isDownloading = false,
                     errorMessage = "Ошибка: ${e.message}"
                 )
-            }
+                }
         }
     }
     

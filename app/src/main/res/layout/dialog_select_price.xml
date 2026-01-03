@@ -33,3 +33,5 @@
         tools:listitem="@layout/dialog_select_price_item" />
 
 </LinearLayout>
+
+

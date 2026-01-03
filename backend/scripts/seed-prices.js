@@ -151,3 +151,5 @@ seedPrices().then(() => {
   console.error('❌ Ошибка заполнения прайс-листа:', error);
   process.exit(1);
 });
+
+

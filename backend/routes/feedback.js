@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { query } from '../database/db.js';
+import { sendFeedbackNotification } from '../services/email-service.js';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -86,6 +87,16 @@ router.post('/', authenticate, upload.array('attachments', 5), async (req, res) 
       JOIN users u ON f.user_id = u.id
       WHERE f.id = ?
     `, [result.lastInsertRowid]);
+    
+    // Отправляем уведомление администратору на email
+    // Используем setImmediate чтобы не блокировать ответ пользователю
+    setImmediate(async () => {
+      try {
+        await sendFeedbackNotification(createdFeedback);
+      } catch (emailError) {
+        console.error('Ошибка отправки email уведомления о фидбеке:', emailError);
+      }
+    });
     
     res.status(201).json(createdFeedback);
   } catch (error) {
@@ -178,3 +189,6 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 export default router;
+
+
+

@@ -21,3 +21,5 @@ Write-Host "Если админ-панель отдается через осн�
 Write-Host "  pm2 restart bestapp-backend" -ForegroundColor White
 Write-Host "  или" -ForegroundColor White
 Write-Host "  pm2 restart server" -ForegroundColor White
+
+

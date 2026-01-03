@@ -1,0 +1,143 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+
+export default function MapPage() {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const scriptLoadedRef = useRef(false)
+
+  // Чистый и четкий SVG в стиле вашего логотипа
+  const svgMarker = `
+    <svg width="60" height="70" viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
+      <!-- Тень для объема -->
+      <path d="M30 68 L56 30 A26 26 0 1 0 4 30 Z" fill="rgba(0,0,0,0.15)" transform="translate(2,2)"/>
+      <!-- Внешняя форма (Синий круг-капля) -->
+      <path d="M30 68 L56 30 A26 26 0 1 0 4 30 Z" fill="#1E88E5"/>
+      <!-- Белый круг внутри -->
+      <circle cx="30" cy="30" r="20" fill="white"/>
+      <!-- Синий гаечный ключ (крупно и четко) -->
+      <g transform="translate(30,30) rotate(-45)">
+        <rect x="-14" y="-3" width="28" height="6" rx="2" fill="#1E88E5"/>
+        <circle cx="-12" cy="0" r="6" fill="#1E88E5"/>
+        <circle cx="12" cy="0" r="6" fill="#1E88E5"/>
+        <!-- Прорези ключа -->
+        <rect x="-18" y="-2" width="8" height="4" fill="white"/>
+        <rect x="10" y="-2" width="8" height="4" fill="white"/>
+      </g>
+    </svg>
+  `.trim();
+  
+  const logoIcon = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarker)}`;
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !mapRef.current || mapInstanceRef.current) {
+      return
+    }
+
+    const existingScript = document.querySelector('script[src*="api-maps.yandex.ru"]')
+    
+    const initMap = () => {
+      window.ymaps.ready(() => {
+        if (!mapInstanceRef.current && mapRef.current) {
+          mapInstanceRef.current = new window.ymaps.Map(mapRef.current, {
+            center: [56.852878, 35.928228], // ВАШИ ТОЧНЫЕ КООРДИНАТЫ
+            zoom: 17,
+            controls: ['zoomControl', 'fullscreenControl']
+          })
+
+          const placemark = new window.ymaps.Placemark(
+            [56.852878, 35.928228],
+            {
+              balloonContent: '<strong>Запчасти</strong><br>Тверь, Московская ул., 1<br>Тел: 89201669381',
+              hintContent: 'Запчасти'
+            },
+            {
+              iconLayout: 'default#image',
+              iconImageHref: logoIcon,
+              iconImageSize: [50, 58],
+              iconImageOffset: [-25, -58]
+            }
+          )
+          mapInstanceRef.current.geoObjects.add(placemark)
+        }
+      })
+    }
+
+    if (existingScript && window.ymaps) {
+      initMap()
+    } else if (!scriptLoadedRef.current) {
+      scriptLoadedRef.current = true
+      const script = document.createElement('script')
+      script.src = 'https://api-maps.yandex.ru/2.1/?apikey=69288f3a-c323-455a-9492-c024564c7004&lang=ru_RU'
+      script.async = true
+      script.onload = initMap
+      document.head.appendChild(script)
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.destroy()
+        mapInstanceRef.current = null
+      }
+    }
+  }, [logoIcon])
+
+  return (
+    <div className="min-h-screen bg-white">
+      <section className="bg-white py-16 md:py-24 border-b border-gray-100">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <h1 className="text-5xl md:text-6xl font-bold text-[#1a1a1a] mb-6 leading-tight">
+            Карта оказания услуг
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl">
+            Наш магазин запчастей в Твери. Ждем вас!
+          </p>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4 py-16 max-w-6xl">
+        <div ref={mapRef} className="w-full h-[600px] rounded-3xl border-2 border-gray-100 mb-16 shadow-2xl bg-gray-50 overflow-hidden" />
+
+        <div className="max-w-md">
+          <div className="border-2 border-black rounded-3xl p-10 bg-white shadow-xl relative">
+            <div className="absolute top-6 right-10">
+               <div className="w-12 h-12 bg-blue-600 rounded-2xl rotate-12 flex items-center justify-center shadow-lg">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6.3 6 9.3 1.4 4.7C.3 7.1.7 10.1 2.7 12.1c1.9 1.9 4.6 2.4 6.9 1.5L18.7 22.7c.4.4 1 .4 1.4 0l2.6-2.6c.4-.4.4-1 0-1.4z"/></svg>
+               </div>
+            </div>
+            
+            <h3 className="text-3xl font-black text-[#1a1a1a] mb-8">Запчасти</h3>
+            
+            <div className="space-y-6 text-gray-600">
+              <div className="flex flex-col">
+                <span className="text-xs uppercase tracking-[0.2em] text-gray-400 font-bold mb-2">Где мы</span>
+                <p className="text-black font-semibold text-lg">г. Тверь, Московская улица, 1</p>
+              </div>
+              
+              <div className="flex flex-col">
+                <span className="text-xs uppercase tracking-[0.2em] text-gray-400 font-bold mb-2">Связь</span>
+                <a href="tel:+79201669381" className="text-blue-600 font-black text-2xl hover:underline">8 (920) 166-93-81</a>
+              </div>
+              
+              <div className="flex flex-col border-t border-gray-100 pt-6">
+                <span className="text-xs uppercase tracking-[0.2em] text-gray-400 font-bold mb-2">График</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <p className="text-black font-bold">ПН-ПТ: 11:00 — 18:00</p>
+                </div>
+                <p className="text-gray-400 text-sm mt-1">Суббота, Воскресенье — выходной</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+declare global {
+  interface Window {
+    ymaps: any
+  }
+}

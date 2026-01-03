@@ -29,7 +29,7 @@
             android:fillColor="#FFFFFF"
             android:pathData="M-6,6 L-2,6 L2,10 L-2,10 Z" />
     </group>
-    
+        
     <!-- Галочка в белом кружке (справа сверху) -->
     <group
         android:translateX="76"

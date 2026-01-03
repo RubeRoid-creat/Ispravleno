@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sendContactEmail } from '@/lib/mail'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +18,19 @@ export async function POST(request: NextRequest) {
     // ВРЕМЕННО: Используем mock endpoint пока backend не исправлен
     // TODO: После исправления backend заменить на реальное API
     console.log('⚠️ Using MOCK endpoint (backend returns 404)')
+    
+    // Отправка email уведомления о новом заказе
+    try {
+      await sendContactEmail({ 
+        name, 
+        email, 
+        phone, 
+        message: `НОВЫЙ ЗАКАЗ С САЙТА\n\nТехника: ${equipmentType} ${brand}\nПроблема: ${problemType}\nАдрес: ${address}\nДата и время: ${date} в ${time}\n\nОписание:\n${description || 'Нет описания'}` 
+      })
+    } catch (emailError) {
+      console.error('Failed to send email notification for order:', emailError)
+    }
+
     console.log('📦 Creating order (MOCK):', {
       name,
       phone,

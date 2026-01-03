@@ -14,3 +14,5 @@ data class ApiNews(
     @SerializedName("created_at") val createdAt: String,
     @SerializedName("updated_at") val updatedAt: String
 )
+
+

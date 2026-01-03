@@ -189,3 +189,5 @@ if __name__ == '__main__':
     print("1. cd e:\\Ispravleno")
     print("2. gradlew.bat assembleDebug")
     print("3. adb install -r app/build/outputs/apk/debug/app-debug.apk")
+
+

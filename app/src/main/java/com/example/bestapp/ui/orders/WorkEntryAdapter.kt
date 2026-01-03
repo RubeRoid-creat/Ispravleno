@@ -81,3 +81,5 @@ class WorkEntryAdapter : RecyclerView.Adapter<WorkEntryAdapter.WorkViewHolder>()
         }
     }
 }
+
+

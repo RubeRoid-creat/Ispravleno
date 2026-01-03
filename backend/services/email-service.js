@@ -150,4 +150,42 @@ export async function sendConfirmationEmail(email, name = 'Пользовате�
   }
 }
 
+/**
+ * Отправка уведомления о новой обратной связи администратору
+ */
+export async function sendFeedbackNotification(feedbackData) {
+  try {
+    const adminEmail = 'ispravleno.pro@mail.ru';
+    const subject = `Новая обратная связь: ${feedbackData.subject}`;
+    
+    const text = `Поступила новая обратная связь от пользователя ${feedbackData.user_name} (${feedbackData.user_email}).\n\nТип: ${feedbackData.feedback_type}\nТема: ${feedbackData.subject}\nСообщение: ${feedbackData.message}`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">📩 Новая обратная связь</h2>
+        <p><strong>От кого:</strong> ${feedbackData.user_name} (${feedbackData.user_email})</p>
+        <p><strong>Тип:</strong> ${feedbackData.feedback_type}</p>
+        <p><strong>Тема:</strong> ${feedbackData.subject}</p>
+        <hr />
+        <p><strong>Сообщение:</strong></p>
+        <p style="white-space: pre-wrap;">${feedbackData.message}</p>
+      </div>
+    `;
+    
+    await transporter.sendMail({
+      from: config.email?.from || 'noreply@bestapp.ru',
+      to: adminEmail,
+      subject: subject,
+      text: text,
+      html: html
+    });
+    
+    console.log(`✅ Уведомление о фидбеке отправлено на ${adminEmail}`);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Ошибка отправки уведомления о фидбеке:', error);
+    return { success: false };
+  }
+}
+
 

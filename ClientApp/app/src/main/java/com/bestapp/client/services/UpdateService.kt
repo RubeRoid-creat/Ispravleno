@@ -161,7 +161,7 @@ class UpdateService(private val context: Context) {
             }
         }
     }
-
+    
     /**
      * Установить APK
      */
@@ -177,21 +177,21 @@ class UpdateService(private val context: Context) {
                 throw Exception("Требуется разрешение на установку из неизвестных источников. Откройте настройки и разрешите установку.")
             }
             
-            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 // Android 7.0+ требует FileProvider
                 val fileProviderUri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    apkFile
-                )
+                        context,
+                        "${context.packageName}.fileprovider",
+                        apkFile
+                    )
                 Log.d(TAG, "📎 FileProvider URI: $fileProviderUri")
                 fileProviderUri
-            } else {
+                } else {
                 val fileUri = Uri.fromFile(apkFile)
                 Log.d(TAG, "📎 File URI: $fileUri")
                 fileUri
-            }
-            
+                }
+                
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -207,7 +207,7 @@ class UpdateService(private val context: Context) {
             val packageManager = context.packageManager
             if (intent.resolveActivity(packageManager) != null) {
                 Log.d(TAG, "✅ Найдено приложение для установки")
-                context.startActivity(intent)
+            context.startActivity(intent)
                 Log.d(TAG, "✅ Intent установки запущен")
             } else {
                 Log.e(TAG, "❌ Не найдено приложение для установки APK")

@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
       await sendContactEmail({ name, email, phone, message })
     } catch (emailError) {
       console.error('Failed to send email notification:', emailError)
-      // Мы не возвращаем ошибку клиенту, если email не отправился, 
-      // так как сообщение уже сохранено в базе данных
+      // Мы не прерываем выполнение, если письмо не отправилось, 
+      // так как сообщение уже сохранено в базе
     }
 
     return NextResponse.json({ success: true, messageId: contactMessage.id }, { status: 201 })

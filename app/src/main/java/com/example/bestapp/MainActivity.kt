@@ -136,7 +136,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
+    
     /**
      * Наблюдатель за статусом обновлений
      */
@@ -160,10 +160,10 @@ class MainActivity : AppCompatActivity() {
                         // Другие статусы логируем
                         Log.d("MainActivity", "Update status: $status")
                     }
-                }
             }
         }
-        
+    }
+    
         // Отслеживаем прогресс загрузки
         lifecycleScope.launch {
             updateManager.downloadProgress.collect { progress ->

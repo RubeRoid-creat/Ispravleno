@@ -188,10 +188,10 @@ class UpdateManager(
                 if (fileLength > 0) {
                     val progress = (total * 100 / fileLength).toInt()
                     if (progress > lastProgress + 1 || progress == 100) {
-                        _downloadProgress.value = DownloadProgress(
-                            progress,
-                            "Загрузка: ${total / 1024 / 1024} MB / ${fileLength / 1024 / 1024} MB"
-                        )
+                    _downloadProgress.value = DownloadProgress(
+                        progress,
+                        "Загрузка: ${total / 1024 / 1024} MB / ${fileLength / 1024 / 1024} MB"
+                    )
                         lastProgress = progress
                         Log.d(TAG, "📊 Прогресс: $progress% ($total / $fileLength bytes)")
                     }
@@ -264,7 +264,7 @@ class UpdateManager(
                 requestInstallPermission()
                 return
             }
-            
+
             val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 // Android 7.0+ требует FileProvider
                 val fileProviderUri = FileProvider.getUriForFile(
@@ -295,7 +295,7 @@ class UpdateManager(
             val packageManager = context.packageManager
             if (intent.resolveActivity(packageManager) != null) {
                 Log.d(TAG, "✅ Найдено приложение для установки")
-                context.startActivity(intent)
+            context.startActivity(intent)
                 Log.d(TAG, "✅ Intent установки запущен")
             } else {
                 Log.e(TAG, "❌ Не найдено приложение для установки APK")

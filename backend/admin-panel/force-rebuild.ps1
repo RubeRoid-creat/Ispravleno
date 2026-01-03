@@ -29,3 +29,5 @@ Write-Host "Затем в браузере:" -ForegroundColor Cyan
 Write-Host "  1. Нажмите Ctrl+Shift+Delete и очистите кэш" -ForegroundColor White
 Write-Host "  2. Или откройте в режиме инкогнито (Ctrl+Shift+N)" -ForegroundColor White
 Write-Host "  3. Или сделайте жесткое обновление (Ctrl+F5)" -ForegroundColor White
+
+

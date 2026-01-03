@@ -30,3 +30,5 @@ Write-Host "🌐 Доступна по адресу: http://0.0.0.0:3001/admin" 
 Write-Host ""
 Write-Host "📊 Статус процессов:" -ForegroundColor Yellow
 pm2 list
+
+

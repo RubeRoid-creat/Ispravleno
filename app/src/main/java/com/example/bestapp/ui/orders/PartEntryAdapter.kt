@@ -97,3 +97,5 @@ class PartEntryAdapter : RecyclerView.Adapter<PartEntryAdapter.PartViewHolder>()
         }
     }
 }
+
+
