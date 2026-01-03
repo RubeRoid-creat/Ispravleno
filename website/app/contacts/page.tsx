@@ -86,7 +86,7 @@ export default function ContactsPage() {
               <div>
                 <h3 className="font-bold text-base mb-3 text-[#1a1a1a]">Мессенджеры</h3>
                 <a
-                  href="https://t.me/ispravleno"
+                  href="https://t.me/ispravlenorbt"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-block bg-[#0088cc] text-white px-6 py-2 rounded hover:bg-[#006699] transition font-medium"
