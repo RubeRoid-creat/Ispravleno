@@ -61,7 +61,7 @@ jobs:
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: ClientApp/app/build/test-results/
@@ -92,7 +92,7 @@ jobs:
         run: ./gradlew assembleDebug
       
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: client-app-debug
           path: ClientApp/app/build/outputs/apk/debug/*.apk
@@ -146,7 +146,7 @@ jobs:
           fi
       
       - name: Upload Release APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: client-app-release
           path: ClientApp/app/build/outputs/apk/release/*.apk
@@ -178,7 +178,7 @@ jobs:
     
     steps:
       - name: Download Release APK
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: client-app-release
           path: ./apk
